@@ -1,0 +1,146 @@
+---
+title: "Análisis Exploratorio"
+author: "Fabián Brenes Trejos"
+date: "2/28/2021"
+output: 
+  html_document:
+    theme: readable
+    highlight: tango
+---
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(dygraphs)
+library(xts)
+library(forecast)
+library(ggiraph)
+library(plotly)
+library(lubridate)
+library(urca)
+library(zoo)
+library(car)
+library(ggiraph)
+library(kableExtra)
+library(cowplot)
+library(lmtest)
+
+#Cargar datos=============
+
+getwd()
+load(file = "../Datos/data_original.Rdata")
+load(file = "../Datos/data.Rdata")
+
+#Variables de control=======
+vars_control <- c("ied", "inflacion", "tbp")
+
+nombres_vars_control <- c("Inversión Extranjera Directa",
+                          "Inflación",
+                          "Tasa Básica Pasiva")
+
+vars_control_unidades <- c("Millones USD",
+                           "%",
+                           "%")
+
+#Eq lineal==============================
+vars <- c("pibr", "cred_pib", vars_control)
+
+formula_mod_lineal <- paste0("pibr ~ cred_pib+", paste0(vars_control, "+", collapse = "")) 
+
+formula_mod_lineal <- str_sub(formula_mod_lineal, 1, str_length(formula_mod_lineal) - 1)
+
+```
+
+```{r funciones, include=F}
+
+#funciones calculos================
+
+crecimiento_interanual <- function(fecha, var) {
+  data <- tibble(fecha, var)
+  
+  data_completa <- tibble(fecha,
+                          var,
+                          fecha_rezagada = fecha %m-% months(12)) %>%
+    left_join(y = data, by = c("fecha_rezagada" = "fecha")) %>% 
+    summarise(crecimiento = var.x / var.y - 1)
+  
+  data_completa$crecimiento
+}
+
+est_descriptivas <- function(mydata, var) {
+  
+  var <- enquo(var)
+  
+  mydata %>% 
+    select(!!var) %>% 
+    na.omit() %>% 
+    summarize(id = "var", 
+              min = min(!!var),
+              perc_25 = quantile(!!var, 0.25), 
+              mediana = quantile(!!var, 0.50),
+              media = mean(!!var),
+              perc_75 = quantile(!!var, 0.75),
+              max = max(!!var)) %>% 
+    pivot_longer(-id, names_to = "Estadístico", values_to = "Valor") %>% 
+    select(-id)
+}
+
+tab_outliers <- function(mydata, fecha, var) {
+  
+  fecha <- enquo(fecha)
+  var <- enquo(var)
+  
+  mydata %>% 
+    select(!!fecha, !!var) %>% 
+    na.omit() %>% 
+    mutate(Q1 = quantile(!!var, 0.25), 
+           Q3 = quantile(!!var, 0.75), 
+           IQ = Q3 - Q1, 
+           lim_inf = Q1 - 1.5 * IQ, 
+           lim_sup = Q3 + 1.5 * IQ, 
+           outlier = ifelse(!!var < lim_inf | !!var > lim_sup, T, F)) 
+}
+
+#funciones graficos==================
+graf_lin <- function(mydata, fecha, var, tit, lab) {
+  
+  mydata %>% 
+    select(!!fecha, !!var) %>% 
+    column_to_rownames(fecha) %>% as.xts() %>% 
+    dygraph(main = tit) %>% 
+    dyAxis("x", drawGrid = FALSE) %>% 
+    dySeries(var, label = lab) 
+  
+}
+
+graf_estacionalidad <- function(mydata, fecha, var) {
+  
+  fecha <- enquo(fecha)
+  var <- enquo(var)
+  
+  mydata %>% 
+    select(!!fecha, !!var) %>%
+    mutate(Q = paste("Trimestre",quarter(!!fecha))) %>% 
+    group_by(Q) %>% 
+    mutate(promedio = mean(!!var)) %>%
+    ggplot(aes(x = !!fecha, y = !!var)) + 
+    geom_line() + 
+    geom_hline(aes(yintercept = promedio, colour = "promedio")) +
+    scale_color_manual(name = "", values = c(promedio = "blue")) +
+    facet_grid(. ~ Q) +
+    labs(title = "Promedio por trimestre") +
+    theme_bw() %+replace%
+      theme(legend.position = "bottom",
+            axis.text.x = element_text(angle = 90))
+}
+
+```
+
+El objetivo del trabajo consiste en estudiar la relación causal entre el **crecimiento económico** (representado por el PIB real) y el **desarrollo del sistema financiero** (se utiliza como variable proxy los créditos al sector privado en porcentajes del PIB nominal), mediante modelos multivariados temporales.
+

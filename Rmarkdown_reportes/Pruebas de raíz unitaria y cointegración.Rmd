@@ -1,0 +1,202 @@
+---
+title: "Pruebas de raíz unitaria y cointegración"
+author: "Fabián Brenes Trejos"
+date: "2/11/2021"
+output: 
+  html_document:
+    theme: readable
+    highlight: tango
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(dygraphs)
+library(xts)
+library(forecast)
+library(ggiraph)
+library(plotly)
+library(lubridate)
+library(urca)
+library(zoo)
+library(car)
+library(ggiraph)
+library(kableExtra)
+library(lmtest)
+
+#Cargar datos=============
+load(file = "../Datos/data.RData")
+load(file = "../Datos/data_original.RData")
+load(file = "../Datos/ts_data.RData")
+
+```
+
+```{r funciones, include=F}
+
+#funciones================
+graf_estacionalidad <- function(mydata, fecha, var) {
+  
+  fecha <- enquo(fecha)
+  var <- enquo(var)
+  
+  mydata %>% 
+    dplyr::select(!!fecha, !!var) %>%
+    mutate(Q = paste("Trimestre",quarter(!!fecha))) %>% 
+    group_by(Q) %>% 
+    mutate(promedio = mean(!!var)) %>%
+    ggplot(aes(x = !!fecha, y = !!var)) + 
+    geom_line() + 
+    geom_hline(aes(yintercept = promedio, colour = "promedio")) +
+    scale_color_manual(name = "", values = c(promedio = "blue")) +
+    facet_grid(. ~ Q) +
+    labs(title = "Promedio por trimestre") +
+    theme_bw() %+replace%
+      theme(legend.position = "bottom",
+            axis.text.x = element_text(angle = 90))
+}
+
+```
+
+#  {.tabset}
+
+## PIB Real
+
+### Estacionariedad serie original
+
+El resultado de la prueba de raíz unitaria de Dickey-Fuller, aporta evidencia suficiente para rechazar la hipótesis nula de que la serie no es estacionaria, con un nivel de significancia de 1%. Sin embargo, por la forma del autocorrelograma, se concluye que la **serie es no estacionaria de orden 0**.
+
+```{r, echo=F}
+
+ur.df(pib_ts, selectlags = "AIC", type = "trend") %>% 
+  summary()
+```
+
+```{r, echo=F}
+
+ggAcf(pib_ts) +
+  ggtitle("PIB Real (Serie original)") + 
+  theme_bw()
+  
+ggPacf(pib_ts) +
+  ggtitle("PIB Real (Serie original)") + 
+  theme_bw()
+
+
+```
+
+### Estacionariedad serie en primeras diferencias
+
+Con el autocorrelograma se comprueba que el PIB real de Costa Rica es estacionario de orden 1.
+
+```{r, echo=F}
+
+#Definir variable como ts
+dpib_ts <- diff(pib_ts)
+
+#Pruebas de raíz unitaria
+ur.df(dpib_ts, selectlags = "AIC", type = "none") %>% 
+  summary()
+
+```
+
+```{r, echo=F}
+
+ggAcf(dpib_ts) +
+  ggtitle("PIB Real (Serie en primera diferencias)") + 
+  theme_bw()
+  
+ggPacf(dpib_ts) +
+  ggtitle("PIB Real (Serie en primera diferencias)") + 
+  theme_bw()
+
+```
+
+## Desarrollo del Sistema Financiero
+
+### Estacionariedad serie original
+
+Con base a la prueba Dickey Fuller, no existe suficiente evidencia estadística para rechazar la hipótesis nula de que la serie es no estacionaria, con un nivel de significancia del 1%. De igual manera, con el correlograma de la serie se concluye lo mismo, por tanto la **serie es no estacionaria de orden 0**.
+
+```{r, echo=F}
+
+ur.df(cred_pib_ts, selectlags = "AIC", type = "trend") %>% 
+  summary()
+```
+
+```{r, echo=F}
+
+ggAcf(cred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie original)") + 
+  theme_bw()
+  
+ggPacf(cred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie original)") + 
+  theme_bw()
+
+
+```
+
+### Estacionariedad serie en primeras diferencias
+
+Tanto con la prueba Dickey Fuller, en donde existe evidencia estadística para rechazar la hipótesis nula de que la serie en primeras diferencias es no estacionaria con un nivel de significancia del 1%, como con el autocorrelograma, se concluye que la serie en primeras diferencias es estacionario, es decir, el desarrollo del sistema financiero es **estacionaria de orden 1**
+
+```{r, echo=F}
+
+#Definir variable como ts
+dcred_pib_ts <- diff(cred_pib_ts)
+
+#Pruebas de raíz unitaria
+ur.df(dcred_pib_ts, selectlags = "AIC", type = "none") %>% 
+  summary()
+
+```
+
+```{r, echo=F}
+
+ggAcf(dcred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie en primera diferencias)") + 
+  theme_bw()
+  
+ggPacf(dcred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie en primera diferencias)") + 
+  theme_bw()
+
+```
+
+## Cointegración
+
+A continuación se calcula la regresión lineal del **PIBr** en función del **desarrollo del sistema financiero** y se evalúa el residuo. Según se constató previamente, ambas series son estacionarias de orden 1, si el residuo es estacionario de orden inferior, se concluye que las series cointegran.
+
+```{r}
+
+mod_lin <- lm(pibr ~ cred_pib, data = data)
+summary(mod_lin)
+
+```
+
+### Estacionariedad del Residuo
+
+La prueba de Dickey Fuller rechaza la hipótesis nula de que el residuo de la regresión lineal del PIBr en función del desarrollo del sistema financiero es no estacionaria. Esto también se corrobora con el autocorrelograma, por lo cual el residuo es **estacionario de orden 0**, siendo el nivel de integración menor al de las series incluidas en la regresión, concluyéndose que ambas series cointegran en el largo plazo.
+
+```{r}
+
+ur.df(res_ts, selectlags = "AIC", type = "drift") %>% 
+  summary()
+
+#Correlogramas
+ggAcf(res_ts) +
+  ggtitle("Residuo de la regresión PIB vs Desarrollo del Sistema Financiero") + 
+  theme_bw()
+
+ggPacf(res_ts) +
+  ggtitle("Residuo de la regresión PIB vs Desarrollo del Sistema Financiero") + 
+  theme_bw()
+```

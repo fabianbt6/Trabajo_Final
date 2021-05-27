@@ -1,0 +1,1092 @@
+---
+title: "Nexo entre crecimiento económico y desarrollo del sistema financiero: análisis de cointegración y series de tiempo, para el caso de Costa Rica."
+author: "Fabián Brenes Trejos"
+date: "24/5/2021"
+output: 
+  html_document:
+    theme: readable
+    highlight: tango
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+library(tidyverse)
+library(readxl)
+library(dygraphs)
+library(xts)
+library(forecast)
+library(ggiraph)
+library(plotly)
+library(lubridate)
+library(urca)
+library(zoo)
+library(car)
+library(ggiraph)
+library(kableExtra)
+library(cowplot)
+library(lmtest)
+library (vars)
+library (broom)
+
+#Cargar datos=============
+load(file = "../Datos/data.RData")
+load(file = "../Datos/data_original.RData")
+load(file = "../Datos/ts_data.RData")
+load(file = "../Datos/covariables_ts_data.RData")
+load(file = "../Datos/data_diff.RData")
+
+#Variables=======
+variables <- cbind(pib_ts, cred_pib_ts)
+
+covariables_regre <- c("apert_comercial", "ied", "mif", "pibusa")
+covariables <- cbind(apertcomercial75_ts, inflacion7_ts, ied_ts)
+dummies <- d_2Q20_ts
+
+nombres_vars_control <- c("Apertura Comercial",
+                          "Inversión Extranjera Directa",
+                          "Margen de Intermediación Financiera", 
+                          "PIB real de USA (Crecimiento Interanual)")
+
+vars_control_unidades <- c("% del PIB",
+                           "Millones de USD",
+                           "%", 
+                           "%")
+
+#Eq lineal==============================
+vars <- c("pibr_yoy", "cred_pib", covariables_regre)
+
+formula_mod_lineal_pib <- paste0("pibr_yoy ~ cred_pib+", paste0(covariables_regre, "+", collapse = "")) 
+formula_mod_lineal_pib <- str_sub(formula_mod_lineal_pib, 1, 
+                                  str_length(formula_mod_lineal_pib) - 1)
+
+formula_mod_lineal_dsf <- paste0("cred_pib ~ pibr_yoy +", paste0(covariables_regre, "+", collapse = "")) 
+formula_mod_lineal_dsf <- str_sub(formula_mod_lineal_dsf, 1, 
+                                  str_length(formula_mod_lineal_dsf) - 1)
+
+```
+
+```{r funciones, include=F}
+
+graf_estacionalidad <- function(mydata, fecha, var) {
+  
+  fecha <- enquo(fecha)
+  var <- enquo(var)
+  
+  mydata %>% 
+    dplyr::select(!!fecha, !!var) %>%
+    mutate(Q = paste("Trimestre",quarter(!!fecha))) %>% 
+    group_by(Q) %>% 
+    mutate(promedio = mean(!!var)) %>%
+    ggplot(aes(x = !!fecha, y = !!var)) + 
+    geom_line() + 
+    geom_hline(aes(yintercept = promedio, colour = "promedio")) +
+    scale_color_manual(name = "", values = c(promedio = "blue")) +
+    facet_grid(. ~ Q) +
+    labs(title = "Promedio por trimestre") +
+    theme_bw() %+replace%
+      theme(legend.position = "bottom",
+            axis.text.x = element_text(angle = 90))
+}
+
+graf_lin <- function(mydata, fecha, var, tit, lab) {
+  
+  mydata %>% 
+    dplyr::select(!!fecha, !!var) %>% 
+    column_to_rownames(fecha) %>% as.xts() %>% 
+    dygraph(main = tit) %>% 
+    dyAxis("x", drawGrid = FALSE) %>% 
+    dySeries(var, label = lab) 
+  
+}
+
+```
+
+El objetivo del estudio consiste en estudiar la relación entre el **crecimiento económico** (representado por el PIB real) y el **desarrollo del sistema financiero** (se utiliza como variable proxy los créditos al sector privado en porcentajes del PIB nominal), mediante modelos multivariados temporales.
+
+#  {.tabset}
+
+## PIB Real de Costa Rica
+
+-   Fuente primaria: Banco Central de Costa Rica
+-   Unidad de medida: Crecimiento interanual
+
+```{r, echo=F, fig.width=8, fig.height=4}
+
+graf_lin(data, "fecha", "pibr_yoy",
+         "PIB Real de Costa Rica",
+         "%")
+
+```
+
+### Análisis de Estacionariedad serie original
+
+Con base a la prueba Dickey-Fuller y al correlograma se concluye que la **serie es no estacionaria**.
+
+```{r, echo=F}
+
+ur.df(pibryoy_ts, selectlags = "AIC", type = "trend") %>% 
+  summary()
+```
+
+```{r, echo=F}
+
+ggAcf(pibryoy_ts) +
+  ggtitle("Crecimiento interanual del PIB Real (Serie original)") + 
+  theme_bw()
+  
+ggPacf(pibryoy_ts) +
+  ggtitle("Crecimiento interanual del PIB Real (Serie original)") + 
+  theme_bw()
+
+```
+
+### Estacionariedad serie en primeras diferencias
+
+Con el autocorrelograma y la prueba Dickey-Fuller se comprueba que el crecimiento interanual del PIB real de Costa Rica es estacionario de orden 1.
+
+```{r, echo=F}
+
+#Definir variable como ts
+dpibryoy_ts <- diff(pibryoy_ts)
+
+#Pruebas de raíz unitaria
+ur.df(dpibryoy_ts, selectlags = "AIC", type = "none") %>% 
+  summary()
+
+```
+
+```{r, echo=F}
+
+ggAcf(dpibryoy_ts) +
+  ggtitle("Crecimiento interanual del PIB Real (Serie en primera diferencias)") + 
+  theme_bw()
+  
+ggPacf(dpibryoy_ts) +
+  ggtitle("Crecimiento interanual del PIB Real (Serie en primera diferencias)") + 
+  theme_bw()
+
+```
+
+## Créditos al sector privado
+
+-   Fuente primaria: Banco Central de Costa Rica
+-   Unidad de medida: Porcentaje del PIB nominal
+
+```{r, echo=F, fig.width=8, fig.height=4}
+
+graf_lin(data, "fecha", "cred_pib",
+         "Crédito al Sector Privado", 
+         "Porcentaje del PIB Nominal") 
+```
+
+### Estacionariedad serie original
+
+Con base a la prueba Dickey Fuller, no existe suficiente evidencia estadística para rechazar la hipótesis nula de que la serie es no estacionaria, con un nivel de significancia del 1%. De igual manera, con el correlograma de la serie se concluye lo mismo, por tanto la **serie es no estacionaria de orden 0**.
+
+```{r, echo=F}
+
+ur.df(cred_pib_ts, selectlags = "AIC", type = "trend") %>% 
+  summary()
+```
+
+```{r, echo=F}
+
+ggAcf(cred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie original)") + 
+  theme_bw()
+  
+ggPacf(cred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie original)") + 
+  theme_bw()
+
+
+```
+
+### Estacionariedad serie en primeras diferencias
+
+Tanto con la prueba Dickey Fuller, en donde existe evidencia estadística para rechazar la hipótesis nula de que la serie en primeras diferencias es no estacionaria con un nivel de significancia del 1%, como con el autocorrelograma, se concluye que la serie en primeras diferencias es estacionario, es decir, el desarrollo del sistema financiero es **estacionaria de orden 1**
+
+```{r, echo=F}
+
+#Definir variable como ts
+dcred_pib_ts <- diff(cred_pib_ts)
+
+#Pruebas de raíz unitaria
+ur.df(dcred_pib_ts, selectlags = "AIC", type = "none") %>% 
+  summary()
+
+```
+
+```{r, echo=F}
+
+ggAcf(dcred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie en primera diferencias)") + 
+  theme_bw()
+  
+ggPacf(dcred_pib_ts) +
+  ggtitle("Desarrollo del Sistema Financiero (Serie en primera diferencias)") + 
+  theme_bw()
+
+```
+
+## Análisis Descriptivo
+
+### Correlación entre crecimiento del PIBr y créditos al sector privado
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+
+#Data===========================================
+
+mod_lm <- lm(pibr_yoy ~ cred_pib, data = data)
+
+mydata <- tibble(fecha = data$fecha,
+                 pibr_yoy = data$pibr_yoy,
+                 residuos = scale(mod_lm$residuals),
+                 cred_pib = data$cred_pib,
+                 `Desempeño Económico` = ifelse(data$pibr_yoy < 0, 
+                                                "Contracción", 
+                                                "Crecimiento"),
+                 flag  = ifelse(abs(residuos) > 2, "1", "0"))
+
+#Gráfico de dispersión==========================
+
+  graf1 <- ggplot(mydata, aes(x = pibr_yoy, y = cred_pib)) + 
+  ylab("Crédito al Sector Privado (% del PIBn)") + 
+  xlab("Crecimiento interanual del PIB") +
+  ylim(0.2, 0.7) +
+  ggtitle(str_wrap("Desarrollo del Sistema Financiero vs Crecimiento Económico", 40)) + 
+  geom_smooth(method = "lm", se = F, color = "grey", size = 0.65) +
+  geom_point_interactive(aes(tooltip = paste0(paste0("Fecha: ",
+                                                    fecha),
+                                              paste0("\n PIBr (Crec. Anual): ",
+                                                     round(pibr_yoy * 100, 1), "%"), 
+                                              paste0("\n Créditos al SP (% PIBn): ",
+                                                     round(cred_pib * 100, 1), "%")),
+                             color = `Desempeño Económico`, 
+                             data_id = fecha)) + 
+  scale_color_manual(values = c("#C70043", "#00C784")) +
+  theme_minimal() %+replace% 
+    theme(legend.position = "none", 
+          title = element_text(size = 0.650), 
+          axis.title = element_text(size = 9))
+
+#Residuos estandarizados======================
+
+graf2 <- mydata %>% 
+  ggplot(aes(y = residuos, x = fecha)) + 
+  geom_point_interactive(aes(tooltip = paste0(paste0("Fecha: ",
+                                                    fecha),
+                                              paste0("\n PIBr (Crec. Anual): ",
+                                                     round(pibr_yoy * 100, 1), "%"), 
+                                              paste0("\n Créditos al SP (% PIBn): ",
+                                                     round(cred_pib * 100, 1), "%")), 
+                             color = `Desempeño Económico`, 
+                             data_id = fecha)) + 
+  geom_hline(yintercept = 2, linetype = "dashed") +
+  geom_hline(yintercept = -2, linetype = "dashed") +
+  scale_color_manual(values = c("#C70043", "#00C784")) +
+  ggtitle(str_wrap("Residuos estandarizados de la regresión lineal (PIBr en función del SF)", 40)) +
+  theme_minimal() %+replace% 
+    theme(legend.position = "none", 
+          title = element_text(size = 0.650), 
+          axis.title = element_text(size = 9))
+
+leg <- get_legend(graf2 +     
+                    guides(color = guide_legend(nrow = 1)) + 
+                    theme(legend.position = "bottom", 
+                          legend.title = element_text(size = 9),
+                          legend.text = element_text(size = 9)))
+
+girafe(ggobj = plot_grid(plot_grid(graf1, graf2), leg, ncol = 1, rel_heights = c(1, .1)),
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+         ))
+
+```
+
+```{r corr, echo=FALSE}
+
+correl <- cor(data$pibr_yoy, data$cred_pib) %>% round(2)
+
+```
+
+Las variables muestran un nivel de correlación de `r correl`.
+
+Al correr una regresión lineal simple entre el crecimiento del PIB real en función del desarrollo del sistema financiero y gráficar los residuos estandarizados, se observan que en el periodo de la crisis financiera mundial (2008 y 2009), estos valores son mayor a 2 en valor absoluto. De igual manera, para diciembre 2019 el residuo estandarizado es mayor a 2.
+
+### Variables de control
+
+```{r, echo=F, message=F}
+
+data_long <- data %>% 
+  dplyr::select(fecha, vars) %>% 
+  pivot_longer(-fecha, "Indicador", values_to = "valor")
+
+tab_vars_control <- data_long %>% 
+  filter(Indicador %in% covariables_regre) %>% 
+  group_by(Indicador) %>% 
+  summarise(Promedio = round(mean(valor), 1), 
+            Mínimo  = round(min(valor), 1), 
+            Máximo = round(max(valor), 1), 
+            `Desviación Estándar` = round(sd(valor), 1), 
+            `Coeficiente de Variación`  = round(`Desviación Estándar` / Promedio, 3)) %>% 
+  ungroup() %>% 
+  mutate(`Nombre Completo` = nombres_vars_control, 
+         `Unidad` = vars_control_unidades) %>% 
+  relocate(`Nombre Completo`, Unidad, .before = Promedio)
+
+tab_vars_control %>% 
+  kbl() %>% 
+  kable_classic_2("hover", full_width = F, font_size = 0.655) %>% 
+  add_header_above(c(" " = 3, "Estadísticas Descriptivas" = 5)) %>% 
+  footnote(symbol = "Fuente: Banco Central de Costa Rica")
+
+```
+
+### Gráficos de las Variables en Niveles
+
+```{r, echo=FALSE}
+
+graf_niv <- data_long %>% 
+  filter(Indicador != "cred_pib", Indicador != "pibr") %>% 
+  ggplot(aes(x = fecha, y = valor)) + 
+  geom_line_interactive(aes(tooltip  = round(valor, 2)), color = "#4169E1") + 
+  facet_wrap(~Indicador, scales = "free") +
+  theme_minimal()
+
+girafe(ggobj = graf_niv, width_svg = 10, height_svg = 3)
+
+```
+
+### Gráficos de Dispersión vrs crecimiento del PIBr
+
+```{r echo=F, message=F}
+
+graf_disp <- data %>% 
+  dplyr::select(fecha, vars, pibr_yoy) %>% 
+  pivot_longer(-fecha, "Indicador", values_to = "valor")  %>% 
+  filter(Indicador != "cred_pib") %>% 
+  pivot_wider(names_from = "Indicador", values_from = "valor") %>% 
+  pivot_longer(-c(fecha,  pibr_yoy), names_to = "Indicador", values_to = "valor") %>% 
+  mutate(`Desempeño Económico` = ifelse(pibr_yoy < 0,
+                                        "Contracción",
+                                        "Crecimiento"))  %>% 
+  ggplot(aes(x = pibr_yoy, y = valor)) + 
+  geom_point_interactive(aes(tooltip = paste0(paste0("Fecha: ",
+                                                    fecha),
+                                              paste0("\n PIBr (Crec. Anual): ",
+                                                     round(pibr_yoy * 100, 1), "%")), 
+                             color = `Desempeño Económico`, 
+                             data_id = fecha)) + 
+  geom_smooth(method = "lm", se = F, color = "grey", size = 0.65) +
+  facet_wrap(~Indicador, scales = "free") + 
+  theme_minimal() %+replace% 
+    theme(legend.position = "bottom")
+
+girafe(ggobj = graf_disp,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+         ))
+
+```
+
+### Gráficos de Dispersión vrs Desarrollo del Sistema Financiero
+
+```{r echo=F, message=F}
+
+graf_disp <- data %>% 
+  dplyr::select(fecha, vars, pibr_yoy) %>% 
+  pivot_longer(-fecha, "Indicador", values_to = "valor")  %>% 
+  filter(Indicador != "pibr") %>% 
+  pivot_wider(names_from = "Indicador", values_from = "valor") %>% 
+  pivot_longer(-c(fecha, cred_pib, pibr_yoy), names_to = "Indicador", values_to = "valor") %>% 
+  mutate(`Desempeño Económico` = ifelse(pibr_yoy < 0,
+                                        "Contracción",
+                                        "Crecimiento")) %>% 
+  ggplot(aes(x = cred_pib, y = valor)) + 
+  geom_point_interactive(aes(tooltip = paste0(paste0("Fecha: ",
+                                                    fecha),
+                                              paste0("\n PIBr (Crec. Anual): ",
+                                                     round(pibr_yoy * 100, 1), "%")), 
+                             color = `Desempeño Económico`, 
+                             data_id = fecha)) + 
+  geom_smooth(method = "lm", se = F, color = "grey", size = 0.65) +
+  facet_wrap(~Indicador, scales = "free") + 
+  theme_minimal() %+replace% 
+    theme(legend.position = "bottom")
+
+girafe(ggobj = graf_disp,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+         ))
+
+```
+
+### Regresión Lineal (variable dependiente = PIBr)
+
+Ecuación: `r formula_mod_lineal_pib`
+
+```{r}
+
+mod_lm_pib <- lm(formula_mod_lineal_pib, data = data)
+summary(mod_lm_pib)
+
+```
+
+#### Evaluación de los supuestos del modelo
+
+##### 1. Multicolinealidad
+
+Las covariables no presentan una alta multicolinealidad.
+
+```{r}
+
+vif(mod_lm_pib)
+
+```
+
+##### 2. Homocedasticidad
+
+No se cumple el supuesto de homocedasticidad, con base a la prueba Breusch-Pagan.
+
+```{r}
+
+bptest(mod_lm_pib)
+
+```
+
+##### 3. Autocorrelación en los residuos
+
+El modelo presenta autocorrelación en el residuo.
+
+```{r}
+
+bgtest(mod_lm_pib)
+```
+
+##### 4. Normalidad de los residuos
+
+Los residuos del modelo no siguen una distribución normal, con base a la prueba de Shapiro.
+
+```{r}
+
+shapiro.test(mod_lm_pib$residuals)
+
+tibble(`residuos estandarizados` = scale(mod_lm_pib$residuals)) %>% 
+  ggplot(aes(x = `residuos estandarizados`)) + geom_histogram(bins = 25) +
+  ggtitle("Histograma de los residuos estandarizados")
+
+```
+
+### Regresión Lineal (variable dependiente = desarrollo del sistema financiero)
+
+Ecuación: `r formula_mod_lineal_dsf`
+
+```{r}
+
+mod_lm_dsf <- lm(formula_mod_lineal_dsf, data = data)
+summary(mod_lm_dsf)
+
+```
+
+#### Evaluación de los supuestos del modelo
+
+##### 1. Multicolinealidad
+
+Las covariables no presentan una alta multicolinealidad.
+
+```{r}
+
+vif(mod_lm_dsf)
+
+```
+
+##### 2. Homocedasticidad
+
+Sí se cumple el supuesto de homocedasticidad, con base a la prueba Breusch-Pagan.
+
+```{r}
+
+bptest(mod_lm_dsf)
+
+```
+
+##### 3. Autocorrelación en los residuos
+
+El modelo presenta autocorrelación en el residuo.
+
+```{r}
+
+bgtest(mod_lm_dsf)
+```
+
+##### 4. Normalidad de los residuos
+
+Los residuos del modelo no siguen una distribución normal.
+
+```{r}
+
+shapiro.test(mod_lm_dsf$residuals)
+
+tibble(`residuos estandarizados` = scale(mod_lm_dsf$residuals)) %>% 
+  ggplot(aes(x = `residuos estandarizados`)) + geom_histogram(bins = 20) +
+  ggtitle("Histograma de los residuos estandarizados")
+
+```
+
+## Cointegración
+
+### Cointegración entre Crecimiento del PIB real y Cred
+
+Con base a la prueba de Johansen-Juselius, se rechaza la hipótesis nula de que no existe cointegración entre las variables, con un nivel de significancia del 5%.  
+```{r}
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), type = "eigen",  
+      season = 4, 
+      K = 2, ecdet = "const") %>% 
+  summary()
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), type = "trace",  
+      season = 4, 
+      K = 2, ecdet = "const") %>% 
+  summary()
+
+```
+
+### Cointegración entre todas las variables
+
+Con base a la prueba de Johansen-Juselius, no existe evidencia suficiente para  rechazar la hipótesis nula de que no existe cointegración entre las variables, con un nivel de significancia del 5%.  
+```{r}
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib, mif, pibusa_yoy, apert_comercial),
+      type = "eigen",  
+      season = 4, 
+      K = 2, ecdet = "const") %>% 
+  summary()
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib, mif, pibusa_yoy, apert_comercial),
+      type = "trace",  
+      season = 4, 
+      K = 2, ecdet = "const") %>% 
+  summary()
+
+```
+
+## Modelo VAR 1
+
+**Características del modelo:**\
+
+- Incluye 2 variables endógenas: PIBr y Cred.
+- Se definen 9 rezagos, con base al criterio de Akaike.
+- No incluye variables exógenas.
+- Se incluye 1 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia.
+
+```{r}
+mod1 <- VAR(dplyr::select(data, pibr_yoy, cred_pib), 
+            type = "both", 
+            lag.max = 12, ic = "AIC", 
+            exogen = dplyr::select(data, d_2Q20))
+
+summary(mod1)
+
+```
+
+```{r echo=F}
+
+#Variables para evaluar el residuo
+
+residuals_mod1 <- data.frame(fecha = 
+                               data$fecha[(nrow(data) 
+                                                    - nrow(residuals(mod1)) + 1):nrow(data)],
+                             res = scale(residuals(mod1))) %>% as_tibble()
+
+residuals_mod1_long <- residuals_mod1 %>%
+  pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
+
+```
+
+### Supuestos del Modelo
+
+#### 1. Autocorrelación serial
+
+No presenta autocorrelación en el residuo.
+
+```{r}
+serial.test(mod1, lags.pt = 16, type = "PT.asymptotic")
+serial.test(mod1, lags.pt = 16, type = "BG")
+serial.test(mod1, lags.pt = 16, type = "PT.adjusted")
+```
+
+```{r echo=F}
+
+ggCcf(x = residuals_mod1$res.pibr_yoy, y = residuals_mod1$res.cred_pib, 
+      type = "correlation") + 
+  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
+
+```
+
+#### 2. Homocedasticidad
+
+Según se constata en la siguiente prueba, el modelo no presenta heterocedasticidad.
+
+```{r}
+arch.test(mod1, lags.multi = 5, multivariate.only = T)
+```
+
+#### 3. Normalidad del residuo
+
+Los residuos multivariados del modelo siguen una distribución normal.
+
+```{r}
+normality.test(mod1, multivariate.only = T)
+
+```
+
+```{r, echo=F}
+
+resz_mod1 <- residuals_mod1_long %>% 
+  ggplot(aes(x = fecha, y = `residuo estandarizado`)) + 
+  geom_point_interactive(aes(tooltip = paste0("Fecha: ", fecha),
+                             data_id = fecha)) + 
+  geom_hline(yintercept = 2,linetype = "dashed") +
+  geom_hline(yintercept = -2,linetype = "dashed") +
+  facet_wrap(. ~ indicador) +
+  ggtitle(str_wrap("Residuos del Modelo VAR", 40)) +
+  theme_bw() %+replace% 
+  theme(panel.background = element_rect(fill = NA), legend.position = "none")
+
+girafe(ggobj = resz_mod1,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+       ))
+
+residuals_mod1_long %>% 
+  ggplot(aes(x = `residuo estandarizado`)) + 
+  geom_density() + 
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("Gráficos de densidad para los residuos del Modelo VAR")
+
+residuals_mod1_long %>% 
+  ggplot(aes(sample = `residuo estandarizado`)) + 
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("QQplots los residuos del Modelo VAR")
+
+```
+
+#### 4. Estabilidad
+
+los eigenvalores son menores a 1, por lo cual se concluye que el modelo sí es estable. Esto se reafirma con el gráfico OLS-CUSUM.
+
+```{r}
+roots(mod1, modulus = T)
+```
+
+```{r, echo=FALSE, fig.height=8}
+stability(mod1, type = "OLS-CUSUM") %>% plot()
+```
+
+## Modelo VAR 2
+
+**Características del modelo:**\
+
+-   Incluye 3 variables endógenas: PIBr_yoy, Cred y MIF (Margen de Intermediación Financiera).
+-   Se definen 5 rezagos, con base al criterio de Akaike.
+-   Incluye 3 variables exógenas: Apertura Comercial, Inversión Extranjera Directa, Inflación y el crecimiento interanual del PIB real de USA. 
+-   Se incluye 3 variablea dicotómicaa para capturar el valor extremo en la variable PIB real asociado a la pandemia y valores extremos asociados al mif.
+
+```{r}
+
+mod2 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif),
+            type = "both",
+            lag.max = 8, ic = "AIC",
+            exogen = data %>% dplyr::select(apert_comercial, inflacion, ied, pibusa_yoy, 
+                                            d_2Q04, d_4Q07, d_2Q20))
+
+summary(mod2)
+
+```
+
+```{r echo=F}
+
+#Variables para evaluar el residuo
+
+residuals_mod2 <- data.frame(fecha =
+                             data$fecha[(nrow(data)
+                                         - nrow(residuals(mod2)) + 1):nrow(data)],
+                                res = scale(residuals(mod2))) %>% as_tibble()
+
+residuals_mod2_long <- residuals_mod2 %>%
+  pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
+
+```
+
+### Supuestos del Modelo
+
+#### 1. Autocorrelación serial
+
+Con base a la prueba de Portmanteau y al gráfico de correlación cruzada, se concluye que los residuos del modelo no presentan autocorrelación. No obstante, la prueba Breusch-Godfrey indica que los residuos sí presentan autocorrelación.
+
+```{r}
+serial.test(mod2, lags.pt = 16, type = "PT.asymptotic")
+serial.test(mod2, lags.pt = 16, type = "BG")
+serial.test(mod2, lags.pt = 16, type = "PT.adjusted")
+```
+
+```{r echo=F}
+
+ggCcf(x = residuals_mod2$res.pibr_yoy, y = residuals_mod2$res.cred_pib, 
+      type = "correlation") + 
+  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
+
+ggCcf(x = residuals_mod2$res.pibr_yoy, y = residuals_mod2$res.mif, 
+      type = "correlation") + 
+  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
+
+ggCcf(x = residuals_mod2$res.cred_pib, y = residuals_mod2$res.mif, 
+      type = "correlation") + 
+  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
+
+```
+
+#### 2. Homocedasticidad
+
+Según se constata en la siguiente prueba, el modelo no presenta heterocedasticidad.
+
+```{r}
+arch.test(mod2, lags.multi = 5, multivariate.only = T)
+```
+
+#### 3. Normalidad del residuo
+
+Los residuos multivariados del modelo siguen una distribución normal.
+
+```{r}
+normality.test(mod2, multivariate.only = T)
+
+```
+
+```{r, echo=F}
+
+resz_mod2 <- residuals_mod2_long %>% 
+  ggplot(aes(x = fecha, y = `residuo estandarizado`)) + 
+  geom_point_interactive(aes(tooltip = paste0("Fecha: ", fecha),
+                             data_id = fecha)) + 
+  geom_hline(yintercept = 2,linetype = "dashed") +
+  geom_hline(yintercept = -2,linetype = "dashed") +
+  facet_wrap(. ~ indicador) +
+  ggtitle(str_wrap("Residuos del Modelo VAR", 40)) +
+  theme_bw() %+replace% 
+  theme(panel.background = element_rect(fill = NA), legend.position = "none")
+
+girafe(ggobj = resz_mod2,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+       ))
+
+residuals_mod2_long %>% 
+  ggplot(aes(x = `residuo estandarizado`)) + 
+  geom_density() + 
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("Gráficos de densidad para los residuos del Modelo VAR")
+
+residuals_mod2_long %>% 
+  ggplot(aes(sample = `residuo estandarizado`)) + 
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("QQplots los residuos del Modelo VAR")
+
+```
+
+#### 4. Estabilidad
+
+los eigenvalores son menores a 1, por lo cual se concluye que el modelo sí es estable. Esto se reafirma con el gráfico OLS-CUSUM.
+
+```{r}
+roots(mod2, modulus = T)
+```
+
+```{r, echo=FALSE, fig.height=8}
+stability(mod2, type = "OLS-CUSUM") %>% plot()
+```
+
+## Modelo VAR 3
+
+**Características del modelo:**\
+
+-   Incluye 5 variables endógenas: PIBr, Cred, mif (Margen de intermediación financiero), crecimiento interanual del PIB real de USA y la apertura comercial.
+-   Se definen 5 rezagos, con base al criterio de Akaike.
+-   Se incluye 3 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia y para capturar valores extremos en el modelo del mif.
+
+```{r}
+
+mod3 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif, pibusa_yoy, apert_comercial),
+            type = "both",
+            lag.max = 8, ic = "AIC",
+            exogen = data %>% dplyr::select(d_2Q04, d_4Q07, d_2Q20))
+
+summary(mod3)
+
+```
+
+```{r echo=F}
+
+#Variables para evaluar el residuo
+
+residuals_mod3 <- data.frame(fecha =
+                             data$fecha[(nrow(data)
+                                         - nrow(residuals(mod3)) + 1):nrow(data)],
+                                res = scale(residuals(mod3))) %>% as_tibble()
+
+residuals_mod3_long <- residuals_mod3 %>%
+  pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
+
+```
+
+### Supuestos del Modelo
+
+#### 1. Autocorrelación serial
+
+Con base a la prueba de Portmanteau se concluye que los residuos del modelo no presentan autocorrelación. No obstante, la prueba Breusch-Godfrey indica que los residuos sí presentan autocorrelación. 
+
+```{r}
+serial.test(mod3, lags.pt = 16, type = "PT.asymptotic")
+serial.test(mod3, lags.pt = 16, type = "BG")
+serial.test(mod3, lags.pt = 16, type = "PT.adjusted")
+```
+
+#### 2. Homocedasticidad
+
+Según se constata en la siguiente prueba, el modelo no presenta heterocedasticidad.
+
+```{r}
+arch.test(mod3, lags.multi = 5, multivariate.only = T)
+```
+
+#### 3. Normalidad del residuo
+
+Los residuos multivariados del modelo siguen una distribución normal.
+
+```{r}
+normality.test(mod3, multivariate.only = T)
+
+```
+
+```{r, echo=F}
+
+resz_mod3 <- residuals_mod3_long %>% 
+  ggplot(aes(x = fecha, y = `residuo estandarizado`)) + 
+  geom_point_interactive(aes(tooltip = paste0("Fecha: ", fecha),
+                             data_id = fecha)) + 
+  geom_hline(yintercept = 2,linetype = "dashed") +
+  geom_hline(yintercept = -2,linetype = "dashed") +
+  facet_wrap(. ~ indicador) +
+  ggtitle(str_wrap("Residuos del Modelo VAR", 40)) +
+  theme_bw() %+replace% 
+  theme(panel.background = element_rect(fill = NA), legend.position = "none")
+
+girafe(ggobj = resz_mod3,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+       ))
+
+residuals_mod3_long %>% 
+  ggplot(aes(x = `residuo estandarizado`)) + 
+  geom_density() + 
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("Gráficos de densidad para los residuos del Modelo VAR")
+
+residuals_mod3_long %>% 
+  ggplot(aes(sample = `residuo estandarizado`)) + 
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("QQplots los residuos del Modelo VAR")
+
+```
+
+#### 4. Estabilidad
+
+los eigenvalores son menores a 1, por lo cual se concluye que el modelo sí es estable. Esto se reafirma con el gráfico OLS-CUSUM.
+
+```{r}
+roots(mod3, modulus = T)
+```
+
+```{r, echo=FALSE, fig.height=8}
+stability(mod3, type = "OLS-CUSUM") %>% plot()
+```
+
+## Funciones impulso-respuesta
+
+```{r echo=F}
+
+irf_comparativo <- function(modelos, nombres, impulse_var, resp_var, acumulado = F, nper = 12) {
+
+  tibble(modelos = modelos) %>% 
+    mutate(modelo = nombres,
+           irf_obj = map(modelos, ~ irf(x = ., 
+                                        impulse = impulse_var, 
+                                        response = resp_var, 
+                                        cumulative = acumulado)), 
+           irf = map(irf_obj, "irf"), 
+           l_inf = map(irf_obj, "Lower"), 
+           l_sup = map(irf_obj, "Upper")) %>% 
+    dplyr::select(-modelos, -irf_obj) %>% 
+    unnest(-modelo) %>% 
+    unnest(-modelo) %>% 
+    mutate(periodo = rep(0:(nper - 2), length(modelos)), 
+           irf = irf[,1], 
+           l_inf = l_inf[,1], 
+           l_sup = l_sup[,1])
+}
+
+irf_ggplot <- function(data, tit, lab, intervalo = T) {
+  
+  line_size <- 0.65
+  
+  graf <- data %>%
+    ggplot(aes(x = periodo, y = irf)) + 
+    geom_line(aes(colour = modelo), size = line_size) + 
+    scale_x_continuous(breaks = seq(0, 12, by = 2)) +
+    facet_wrap(. ~ modelo) +
+    geom_hline(yintercept = 0) +  
+    ggtitle(tit) + 
+    ylab(lab) +
+    theme_bw() %+replace% 
+    theme(legend.position = "none", 
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
+  
+  if(intervalo == T) {
+    graf <- graf + 
+      geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", 
+                linetype = "dashed",
+                size = line_size) + 
+      geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", 
+                linetype = "dashed", 
+                size = line_size) 
+  } 
+  
+  return(graf)
+  
+}  
+
+```
+
+### PIBr
+
+```{r echo=F}
+
+modelos <- list(mod1, mod2, mod3)
+
+cred_a_pib <- irf_comparativo(modelos,
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
+                              impulse_var = "cred_pib" , 
+                              resp_var = "pibr_yoy")
+
+# irf_ggplot(cred_a_pib, 
+#            "Respuesta del PIB a un impulso en el cred",
+#            "%", 
+#            intervalo = T)
+
+cred_a_pib_acum <- irf_comparativo(modelos,
+                                   nombres = paste("mod", c("1", "2", "3"), sep = ""),
+                                   impulse_var = "cred_pib",
+                                   resp_var = "pibr_yoy",
+                                   acumulado = T)
+
+irf_ggplot(cred_a_pib_acum, 
+           "Respuesta del PIB a un impulso en el cred (Efecto Acumulado)",
+           "%", 
+           intervalo = T)
+
+```
+
+### Cred
+
+```{r echo=FALSE}
+
+pib_a_cred <- irf_comparativo(modelos, 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
+                              impulse_var = "pibr_yoy" , 
+                              resp_var = "cred_pib")
+
+# irf_ggplot(pib_a_cred, 
+#            "Respuesta del Cred a un impulso en el PIB",
+#            "% del PIB", 
+#            intervalo = T)
+
+pib_a_cred_acum <- irf_comparativo(modelos, 
+                                   nombres = paste("mod", c("1", "2", "3"), sep = ""),
+                                   impulse_var = "pibr_yoy" ,
+                                   resp_var = "cred_pib",
+                                   acumulado = T)
+
+irf_ggplot(pib_a_cred_acum, 
+           "Respuesta del Cred a un impulso en el PIB (Efecto Acumulado)",
+           "% del PIB", 
+           intervalo = T)
+
+```
+
+```{r echo=F}
+
+apert_a_pib <- irf_comparativo(list(mod3),
+                               nombres = "mod3", 
+                               impulse_var = "apert_comercial", 
+                               resp_var = "pibr_yoy", 
+                               acumulado = T)
+
+irf_ggplot(apert_a_pib, 
+           "Respuesta del PIB a un impulso la apertura comercial (Efecto Acumulado)",
+           "%", 
+           intervalo = T)
+
+pibusa_a_pib <- irf_comparativo(list(mod3),
+                                nombres = "mod3",
+                                impulse_var = "pibusa_yoy",
+                                resp_var = "pibr_yoy",
+                                acumulado = T)
+
+irf_ggplot(pibusa_a_pib, 
+           "Respuesta del PIB a un impulso en en el crecimiento del PIB de USA (Acum.)",
+           "%", 
+           intervalo = T)
+
+```
+
