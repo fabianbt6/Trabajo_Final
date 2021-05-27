@@ -22,13 +22,12 @@ load(file = "../Datos/data_diff.RData")
 load(file = "../Datos/ts_data.RData")
 load(file = "../Datos/covariables_ts_data.RData")
 
-data_diff <- data %>%
-  mutate(across(-fecha,  .fns =  ~ . - lag(.), .names = "{.col}_diff")) %>%
-  na.omit()
+# data_diff <- data %>%
+#   mutate(across(-fecha,  .fns =  ~ . - lag(.), .names = "{.col}_diff")) %>%
+#   na.omit()
 
 #save(data_diff, file = "../Datos/data_diff.RData")
 
-names(data_diff)
 #Crear variables============
 #Función para crear variable ts
 convert_ts <- function(data, fecha, var) {
@@ -165,11 +164,12 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib),
       ecdet = "const") %>% 
   summary()
 
+names(data_diff)
 #Modelo VAR 1===============================
-mod1 <- VAR(dplyr::select(data_diff, pibr_yoy_diff, cred_pib_diff), 
-            type = "const", 
+mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
+            type = "both", 
             lag.max = 12, ic = "AIC",
-            exogen = dplyr::select(data_diff, pibusa_yoy_diff, d_2Q20_diff))
+            exogen = dplyr::select(data, d_2Q20))
 
 summary(mod1)
 
@@ -192,7 +192,9 @@ serial.test(mod1, lags.pt = 16, type = "BG")
 serial.test(mod1, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod1, lags.pt = 16, type = "ES")
 
-ggCcf(x = residuals_mod1$res.pibr_yoy_diff, y = residuals_mod1$res.cred_pib_diff, 
+acf(residuals(mod1))
+
+ggCcf(x = residuals_mod1$res.log_pibryoy, y = residuals_mod1$res.cred_pib, 
       type = "correlation") + 
   ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
 
@@ -259,15 +261,15 @@ mod1_data <- tibble(residuals_mod1, mod1$datamat)
 #   theme_bw()
 
 #Granger causalidad
-causality(mod1, cause = "cred_pib_diff")
-causality(mod1, cause = "pibr_diff")
+causality(mod1, cause = "cred_pib")
+causality(mod1, cause = "log_pibryoy")
 
 #Funciones impulso respuesta
 pib_a_cred_mod1 <- irf(mod1,
-                       impulse = "pibr_diff",
-                       response = "cred_pib_diff",
+                       impulse = "log_pibryoy",
+                       response = "cred_pib",
                        n.ahead = 12,
-                       cumulative = F)
+                       cumulative = T)
 
 plot(pib_a_cred_mod1)
 
