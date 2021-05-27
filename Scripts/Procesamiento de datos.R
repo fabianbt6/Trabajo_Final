@@ -57,18 +57,11 @@ data <- data_original %>%
   dplyr::select(-m1) %>% 
   mutate(pibn_rollsum_4q = rollapplyr(pibn, width = 4, FUN = sum, partial = T), 
          pibr_yoy = crecimiento_interanual(data_original$fecha, data_original$pibr),
+         log_pibryoy = log(pibr_yoy + 1), 
          pibusa_yoy = crecimiento_interanual(data_original$fecha, data_original$pibusa),
          inflacion = crecimiento_interanual(data_original$fecha, data_original$ipc) * 100,
          vartc = crecimiento_interanual(data_original$fecha, data_original$tc) * 100,
          mif = mif * 100,
-         mifl1 = lag(mif, order_by = fecha, n = 1),
-         mifl2 = lag(mif, order_by = fecha, n = 2),
-         mifl3 = lag(mif, order_by = fecha, n = 3),
-         mifl4 = lag(mif, order_by = fecha, n = 4),
-         tbpl1 = lag(tbp, order_by = fecha, n = 1),
-         tbpl2 = lag(tbp, order_by = fecha, n = 2),
-         tbpl3 = lag(tbp, order_by = fecha, n = 3),
-         tbpl4 = lag(tbp, order_by = fecha, n = 4),
          ied_pib = (ied * tc / pibn) * 100,
          tir = tbp - inflacion,
          cred_pib = cred / pibn_rollsum_4q, 
@@ -81,17 +74,13 @@ data <- data_original %>%
 #   dplyr::select(fecha, mif, mifl1) %>% 
 #   view()
 
-data %>% ggplot(aes(fecha, ied_pib)) + geom_line()
-
-data %>% ggplot(aes(fecha, vartc)) + geom_line()
-
 data %>% ggplot(aes(fecha, cred_yoy)) + geom_line()
 
 data %>% ggplot(aes(fecha, pibusa_yoy)) + geom_line()
 
-data %>% ggplot(aes(fecha, petroleo)) + geom_line()
+data %>% ggplot(aes(fecha, pibr_yoy)) + geom_line()
 
-cor(data$pibr_yoy, data$pibusa_yoy)
+data %>% ggplot(aes(fecha, log_pibryoy)) + geom_line()
 
 View(data)
 
