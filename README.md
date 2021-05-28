@@ -4,5 +4,5 @@ El siguiente repositor realiza un análisis de series de tiempo para responder a
 La fuente de los datos es el Banco Central de Costa Rica (BCCR) y la Superintendencia General de Entidades Financieras (SUGEF).
 
 Se adjuntan: 
-- Código de R. 
-- Base de datos utilizada.
+- Códigos de R
+- Base de datos utilizada
