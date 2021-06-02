@@ -22,13 +22,12 @@ load(file = "../Datos/data_diff.RData")
 load(file = "../Datos/ts_data.RData")
 load(file = "../Datos/covariables_ts_data.RData")
 
-data_diff <- data %>%
-  mutate(across(-fecha,  .fns =  ~ . - lag(.), .names = "{.col}_diff")) %>%
-  na.omit()
+# data_diff <- data %>%
+#   mutate(across(-fecha,  .fns =  ~ . - lag(.), .names = "{.col}_diff")) %>%
+#   na.omit()
 
 #save(data_diff, file = "../Datos/data_diff.RData")
 
-names(data_diff)
 #Crear variables============
 #Función para crear variable ts
 convert_ts <- function(data, fecha, var) {
@@ -160,16 +159,46 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib),
 
 ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), 
       type = "trace",  
-      season = 4,
       K = 2, 
       ecdet = "const") %>% 
   summary()
 
+#Exogeneidad debil
+
+jo_test <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib, apert_comercial, tbp, ied_pib), 
+      type = "trace",
+      spec = "transitory",
+      K = 2) 
+
+summary(jo_test)
+
+vecm_exog <- cajorls(jo_test, r = 2)
+vecm_exog$rlm$coefficients
+coef(vecm_exog$rlm) [2 , ]
+beta
+
+A1 <- matrix(c(0, 1, 0, 0, 
+               1, 0, 0, 0, 
+               0, 1, 0, 0, 
+               0, 0, 1, 0, 
+               0, 0, 0, 1), nrow = 5, ncol = 4)
+
+A2 <- matrix(c(0, 1, 0, 0, 
+               1, 0, 0, 0, 
+               0, 1, 0, 0, 
+               0, 0, 1, 0, 
+               0, 0, 0, 1), nrow = 5, ncol = 4)
+
+
+summary(alrtest(z = jo_test, A = A1 , r = 2))
+
+
+names(data_diff)
 #Modelo VAR 1===============================
-mod1 <- VAR(dplyr::select(data_diff, pibr_yoy_diff, cred_pib_diff), 
-            type = "const", 
+mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
+            type = "both", 
             lag.max = 12, ic = "AIC",
-            exogen = dplyr::select(data_diff, pibusa_yoy_diff, d_2Q20_diff))
+            exogen = dplyr::select(data, d_2Q20))
 
 summary(mod1)
 
@@ -185,14 +214,16 @@ VARselect(cbind(pibryoy_ts, `credyoy_ts`),
 ### Autocorrelación serial
 
 residuals_mod1 <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod1)) + 1):nrow(data)],
-                                res = scale(residuals(mod1))) %>% as_tibble()
+                             res = scale(residuals(mod1))) %>% as_tibble()
 
 serial.test(mod1, lags.pt = 16, type = "PT.asymptotic")
 serial.test(mod1, lags.pt = 16, type = "BG")
 serial.test(mod1, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod1, lags.pt = 16, type = "ES")
 
-ggCcf(x = residuals_mod1$res.pibr_yoy_diff, y = residuals_mod1$res.cred_pib_diff, 
+acf(residuals(mod1))
+
+ggCcf(x = residuals_mod1$res.log_pibryoy, y = residuals_mod1$res.cred_pib, 
       type = "correlation") + 
   ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
 
@@ -259,31 +290,26 @@ mod1_data <- tibble(residuals_mod1, mod1$datamat)
 #   theme_bw()
 
 #Granger causalidad
-causality(mod1, cause = "cred_pib_diff")
-causality(mod1, cause = "pibr_diff")
+causality(mod1, cause = "cred_pib")
+causality(mod1, cause = "log_pibryoy")
 
 #Funciones impulso respuesta
 pib_a_cred_mod1 <- irf(mod1,
-                       impulse = "pibr_diff",
-                       response = "cred_pib_diff",
+                       impulse = "log_pibryoy",
+                       response = "cred_pib",
                        n.ahead = 12,
-                       cumulative = F)
+                       cumulative = T)
 
 plot(pib_a_cred_mod1)
 
-pib_a_cred_cum_mod1 <- irf(mod1,
-                         impulse = "pibr_diff",
-                         response = "cred_pib_diff",
-                         n.ahead = 12,
-                         cumulative = T)
 dev.off()
 plot(pib_a_cred_cum_mod1)
 
 cred_a_pib_mod1 <- irf(mod1,
-                     impulse = "credyoy_ts",
-                     response = "pibryoy_ts",
+                     impulse = "cred_pib",
+                     response = "log_pibryoy",
                      n.ahead = 12,
-                     cumulative = F)
+                     cumulative = T)
 
 
 cred_a_pib_cum_mod1 <- irf(mod1,
@@ -295,11 +321,10 @@ cred_a_pib_cum_mod1 <- irf(mod1,
 plot(cred_a_pib_mod1)
 
 #Modelo VAR 2===============================
-mod2 <- VAR(dplyr::select(data_diff, pibr_yoy_diff, cred_pib_diff, mif_diff), 
+mod2 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
             lag.max = 12, ic = "AIC",
-            exogen = dplyr::select(data_diff, pibusa_yoy_diff, 
-                                   d_2Q04_diff, d_4Q07_diff, d_2Q20_diff))
+            exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, d_2Q20))
 
 summary(mod2)
 
@@ -324,6 +349,8 @@ serial.test(mod2, lags.pt = 16, type = "PT.asymptotic")
 serial.test(mod2, lags.pt = 16, type = "BG")
 serial.test(mod2, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod2, lags.pt = 16, type = "ES")
+
+acf(residuals(mod2))
 
 ggCcf(x = residuals_mod2$res.pibr_yoy_diff, y = residuals_mod2$res.cred_pib_diff, 
       type = "correlation") + 
@@ -382,39 +409,28 @@ residuals_mod2_long %>%
   ggtitle("QQplots los residuos del Modelo VAR")
 
 #Granger causalidad
-causality(mod2, cause = "cred_pib_diff")
-causality(mod2, cause = "pibr_yoy_diff")
+causality(mod2, cause = "cred_pib")
+causality(mod2, cause = "log_pibryoy")
 
 #Funciones impulso respuesta
 pib_a_cred_mod2 <- irf(mod2,
-                     impulse = "pibr_yoy",
+                     impulse = "log_pibryoy",
                      response = "cred_pib",
                      n.ahead = 12,
-                     cumulative = F)
+                     cumulative = T)
 
-pib_a_cred_cum_mod2 <- irf(mod2,
-                         impulse = "pibr_yoy",
-                         response = "cred_pib",
-                         n.ahead = 12,
-                         cumulative = T)
+plot(pib_a_cred_mod2)
 
 cred_a_pib_mod2 <- irf(mod2,
                      impulse = "cred_pib",
-                     response = "pibr_yoy",
+                     response = "log_pibryoy",
                      n.ahead = 12,
                      cumulative = F,
                      boot = T,
                      ortho = T)
 
-cred_a_pib_cum_mod2 <- irf(mod2,
-                         impulse = "cred_pib",
-                         response = "pibr_yoy",
-                         n.ahead = 12,
-                         cumulative = T,
-                         boot = T,
-                         ortho = T)
 
-plot(cred_a_pib_cum_mod2)
+plot(cred_a_pib_mod2)
 
 fevd(mod2, n.ahead = 10) %>% plot()
 
@@ -828,8 +844,8 @@ modelos <- list(mod1, mod2)
 
 cred_a_pib <- irf_comparativo(modelos, 
                               nombres = paste("mod", c("1", "2"), sep = ""), 
-                              impulse_var = "cred_pib_diff", 
-                              resp_var = "pibr_yoy_diff", 
+                              impulse_var = "cred_pib", 
+                              resp_var = "log_pibryoy", 
                               acumulado = T)
 
 #dev.off() Correr si ggplot no funciona
@@ -840,8 +856,8 @@ irf_ggplot(cred_a_pib,
 
 pib_a_cred <- irf_comparativo(modelos, 
                               nombres = paste("mod", c("1", "2"), sep = ""), 
-                              impulse_var = "pibr_yoy_diff" , 
-                              resp_var = "cred_pib_diff", 
+                              impulse_var = "log_pibryoy" , 
+                              resp_var = "cred_pib", 
                               acumulado = T)
 
 irf_ggplot(pib_a_cred, 

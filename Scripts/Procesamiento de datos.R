@@ -59,6 +59,7 @@ data <- data_original %>%
          pibr_yoy = crecimiento_interanual(data_original$fecha, data_original$pibr),
          log_pibryoy = log(pibr_yoy + 1), 
          pibusa_yoy = crecimiento_interanual(data_original$fecha, data_original$pibusa),
+         log_pibusayoy = log(pibusa_yoy + 1),
          inflacion = crecimiento_interanual(data_original$fecha, data_original$ipc) * 100,
          vartc = crecimiento_interanual(data_original$fecha, data_original$tc) * 100,
          mif = mif * 100,
