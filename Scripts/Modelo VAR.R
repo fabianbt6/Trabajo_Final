@@ -177,11 +177,18 @@ vecm_exog$rlm$coefficients
 coef(vecm_exog$rlm) [2 , ]
 beta
 
-A1 <- matrix(c(0, 0, 0, 0, 
+A1 <- matrix(c(0, 1, 0, 0, 
                1, 0, 0, 0, 
                0, 1, 0, 0, 
                0, 0, 1, 0, 
                0, 0, 0, 1), nrow = 5, ncol = 4)
+
+A2 <- matrix(c(0, 1, 0, 0, 
+               1, 0, 0, 0, 
+               0, 1, 0, 0, 
+               0, 0, 1, 0, 
+               0, 0, 0, 1), nrow = 5, ncol = 4)
+
 
 summary(alrtest(z = jo_test, A = A1 , r = 2))
 
