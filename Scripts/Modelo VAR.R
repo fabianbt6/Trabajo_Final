@@ -177,23 +177,33 @@ vecm_exog$rlm$coefficients
 coef(vecm_exog$rlm) [2 , ]
 beta
 
-A1 <- matrix(c(0, 1, 0, 0, 
-               1, 0, 0, 0, 
-               0, 1, 0, 0, 
-               0, 0, 1, 0, 
-               0, 0, 0, 1), nrow = 5, ncol = 4)
+#Prueba de exogeneidad de apert_comercial
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 1), nrow = 5, ncol = 4, byrow = T)
 
-A3 <- matrix(c(0, 1, 0, 0, 
-               1, 0, 0, 0, 
-               0, 1, 0, 0, 
-               0, 0, 1, 0, 
-               0, 0, 0, 1), nrow = 5, ncol = 4)
+summary(alrtest(z = jo_test, A = A , r = 2))
 
+#Prueba de exogeneidad del tbp
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 0, 
+              0, 0, 0, 1), nrow = 5, ncol = 4, byrow = T)
 
-summary(alrtest(z = jo_test, A = A1 , r = 2))
+summary(alrtest(z = jo_test, A = A , r = 2))
 
+#Prueba de exogeneidad del ied_pib
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 1, 
+              0, 0, 0, 0), nrow = 5, ncol = 4, byrow = T)
 
-names(data_diff)
+summary(alrtest(z = jo_test, A = A , r = 2))
+
 #Modelo VAR 1===============================
 mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
@@ -453,10 +463,10 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
           exogen = d_2Q20_ts)
 
 #Modelo VAR 3===============================
-mod3 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif, apert_comercial),
-            type = "both",
+mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib, apert_comercial), 
+            type = "both", 
             lag.max = 8, ic = "AIC",
-            exogen = data %>% dplyr::select(pibusa_yoy, d_2Q04, d_4Q07, d_1Q20, d_2Q20))
+            exogen = dplyr::select(data, tbp, ied_pib, d_2Q20))
 
 summary(mod3)
 
@@ -470,6 +480,8 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
 ##Evaluación del modelo básico
 
 ### Autocorrelación serial
+
+acf(residuals(mod3))
 
 residuals_mod3 <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod3)) + 1):nrow(data)],
                              res = scale(residuals(mod3))) %>% as_tibble()
@@ -840,10 +852,10 @@ irf_ggplot <- function(data, tit, lab, intervalo = T) {
   
 }  
     
-modelos <- list(mod1, mod2) 
+modelos <- list(mod1, mod2, mod3) 
 
 cred_a_pib <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2"), sep = ""), 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
                               impulse_var = "cred_pib", 
                               resp_var = "log_pibryoy", 
                               acumulado = T)
@@ -855,7 +867,7 @@ irf_ggplot(cred_a_pib,
            intervalo = T)
 
 pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2"), sep = ""), 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
                               impulse_var = "log_pibryoy" , 
                               resp_var = "cred_pib", 
                               acumulado = T)
@@ -865,3 +877,13 @@ irf_ggplot(pib_a_cred,
            "% del PIB", 
            intervalo = T)
 
+apertcomer_a_pib <- irf_comparativo(list(mod3), 
+                              nombres = paste("mod", c("3"), sep = ""), 
+                              impulse_var = "apert_comercial" , 
+                              resp_var = "log_pibryoy", 
+                              acumulado = T)
+
+irf_ggplot(apertcomer_a_pib, 
+           "Respuesta del Cred a un impulso en el PIB",
+           "% del PIB", 
+           intervalo = T)
