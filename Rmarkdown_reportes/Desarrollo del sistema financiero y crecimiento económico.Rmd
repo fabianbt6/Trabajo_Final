@@ -1,7 +1,7 @@
 ---
 title: "Nexo entre crecimiento económico y desarrollo del sistema financiero: análisis de cointegración y series de tiempo, para el caso de Costa Rica."
 author: "Fabián Brenes Trejos"
-date: "24/5/2021"
+date: "3/6/2021"
 output: 
   html_document:
     theme: readable
@@ -120,9 +120,9 @@ El objetivo del estudio consiste en estudiar la relación entre el **crecimiento
 
 ```{r, echo=F, fig.width=8, fig.height=4}
 
-graf_lin(data, "fecha", "pibr_yoy",
+graf_lin(data, "fecha", "log_pibryoy",
          "PIB Real de Costa Rica",
-         "%")
+         " ")
 
 ```
 
@@ -589,19 +589,67 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib, mif, pibusa_yoy, apert_comercia
 
 ```
 
+## Análisis de exogeneidad débil
+
+En este análisis se asumen inicialmente que todas las variables son endógenas. Posteriormente se empieza a analizar cada una para determinar si pueden ser tratadas como exógenas en el modelo VAR. Este análisis se aplicó a todas las variables excepto log_pibryoy y cred_pib, y dio como resultado que la apertura comercial debe incluirse como endógena, mientras que la tbp e ied_pib, deben ser tratadas como exógenas. A continuación se muestran los resultados para cada variable:
+
+```{r}
+jo_test <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib, apert_comercial, tbp, ied_pib), 
+      type = "trace",
+      spec = "transitory",
+      K = 2) 
+```
+
+### Apert_comercial
+```{r}
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 1), nrow = 5, ncol = 4, byrow = T)
+
+summary(alrtest(z = jo_test, A = A , r = 2))
+
+```
+
+
+### TBP
+```{r}
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 0, 
+              0, 0, 0, 1), nrow = 5, ncol = 4, byrow = T)
+
+summary(alrtest(z = jo_test, A = A , r = 2))
+
+```
+
+### IED (% del PIB)
+```{r}
+A <- matrix(c(1, 0, 0, 0, 
+              0, 1, 0, 0, 
+              0, 0, 1, 0, 
+              0, 0, 0, 1, 
+              0, 0, 0, 0), nrow = 5, ncol = 4, byrow = T)
+
+summary(alrtest(z = jo_test, A = A , r = 2))
+
+```
+
 ## Modelo VAR 1
 
 **Características del modelo:**\
 
-- Incluye 2 variables endógenas: PIBr y Cred.
+- Incluye 2 variables endógenas: log_pibryoy y Cred.
 - Se definen 9 rezagos, con base al criterio de Akaike.
 - No incluye variables exógenas.
 - Se incluye 1 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia.
 
 ```{r}
-mod1 <- VAR(dplyr::select(data, pibr_yoy, cred_pib), 
+mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
-            lag.max = 12, ic = "AIC", 
+            lag.max = 12, ic = "AIC",
             exogen = dplyr::select(data, d_2Q20))
 
 summary(mod1)
@@ -636,10 +684,7 @@ serial.test(mod1, lags.pt = 16, type = "PT.adjusted")
 
 ```{r echo=F}
 
-ggCcf(x = residuals_mod1$res.pibr_yoy, y = residuals_mod1$res.cred_pib, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
-
+acf(residuals(mod1))
 ```
 
 #### 2. Homocedasticidad
@@ -713,18 +758,17 @@ stability(mod1, type = "OLS-CUSUM") %>% plot()
 
 **Características del modelo:**\
 
--   Incluye 3 variables endógenas: PIBr_yoy, Cred y MIF (Margen de Intermediación Financiera).
--   Se definen 5 rezagos, con base al criterio de Akaike.
--   Incluye 3 variables exógenas: Apertura Comercial, Inversión Extranjera Directa, Inflación y el crecimiento interanual del PIB real de USA. 
--   Se incluye 3 variablea dicotómicaa para capturar el valor extremo en la variable PIB real asociado a la pandemia y valores extremos asociados al mif.
+-   Incluye 2 variables endógenas: log_pibryoy y Cred.
+-   Se definen 9 rezagos, con base al criterio de Akaike.
+-   Incluye 3 variables exógenas: Apertura Comercial, tbp (tasa básica pasiva) e Inversión Extranjera Directa en porcentajes del PIB. 
+-   Se incluye 1 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia.
 
 ```{r}
 
-mod2 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif),
-            type = "both",
-            lag.max = 8, ic = "AIC",
-            exogen = data %>% dplyr::select(apert_comercial, inflacion, ied, pibusa_yoy, 
-                                            d_2Q04, d_4Q07, d_2Q20))
+mod2 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
+            type = "both", 
+            lag.max = 12, ic = "AIC",
+            exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, d_2Q20))
 
 summary(mod2)
 
@@ -758,18 +802,7 @@ serial.test(mod2, lags.pt = 16, type = "PT.adjusted")
 
 ```{r echo=F}
 
-ggCcf(x = residuals_mod2$res.pibr_yoy, y = residuals_mod2$res.cred_pib, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
-
-ggCcf(x = residuals_mod2$res.pibr_yoy, y = residuals_mod2$res.mif, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
-
-ggCcf(x = residuals_mod2$res.cred_pib, y = residuals_mod2$res.mif, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
-
+acf(residuals(mod2))
 ```
 
 #### 2. Homocedasticidad
@@ -843,16 +876,17 @@ stability(mod2, type = "OLS-CUSUM") %>% plot()
 
 **Características del modelo:**\
 
--   Incluye 5 variables endógenas: PIBr, Cred, mif (Margen de intermediación financiero), crecimiento interanual del PIB real de USA y la apertura comercial.
--   Se definen 5 rezagos, con base al criterio de Akaike.
--   Se incluye 3 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia y para capturar valores extremos en el modelo del mif.
+- Con base al análisis de exogeneidad débil, se agrega la apertura comercial como variable endógena.
+- Se definen 6 rezagos, con base al criterio de Akaike.
+- Incluye 3 variables exógenas tbp e ied_pib. 
+- Se incluye 1 variable dicotómica para capturar el valor extremo en la variable PIB real asociado a la pandemia.
 
 ```{r}
 
-mod3 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif, pibusa_yoy, apert_comercial),
-            type = "both",
+mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib, apert_comercial), 
+            type = "both", 
             lag.max = 8, ic = "AIC",
-            exogen = data %>% dplyr::select(d_2Q04, d_4Q07, d_2Q20))
+            exogen = dplyr::select(data, tbp, ied_pib, d_2Q20))
 
 summary(mod3)
 
@@ -882,6 +916,12 @@ Con base a la prueba de Portmanteau se concluye que los residuos del modelo no p
 serial.test(mod3, lags.pt = 16, type = "PT.asymptotic")
 serial.test(mod3, lags.pt = 16, type = "BG")
 serial.test(mod3, lags.pt = 16, type = "PT.adjusted")
+```
+
+```{r}
+
+acf(residuals(mod3))
+
 ```
 
 #### 2. Homocedasticidad
@@ -1014,25 +1054,16 @@ irf_ggplot <- function(data, tit, lab, intervalo = T) {
 
 modelos <- list(mod1, mod2, mod3)
 
-cred_a_pib <- irf_comparativo(modelos,
-                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
-                              impulse_var = "cred_pib" , 
-                              resp_var = "pibr_yoy")
-
-# irf_ggplot(cred_a_pib, 
-#            "Respuesta del PIB a un impulso en el cred",
-#            "%", 
-#            intervalo = T)
 
 cred_a_pib_acum <- irf_comparativo(modelos,
                                    nombres = paste("mod", c("1", "2", "3"), sep = ""),
                                    impulse_var = "cred_pib",
-                                   resp_var = "pibr_yoy",
+                                   resp_var = "log_pibryoy",
                                    acumulado = T)
 
 irf_ggplot(cred_a_pib_acum, 
            "Respuesta del PIB a un impulso en el cred (Efecto Acumulado)",
-           "%", 
+           "log_pibryoy", 
            intervalo = T)
 
 ```
@@ -1041,19 +1072,9 @@ irf_ggplot(cred_a_pib_acum,
 
 ```{r echo=FALSE}
 
-pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
-                              impulse_var = "pibr_yoy" , 
-                              resp_var = "cred_pib")
-
-# irf_ggplot(pib_a_cred, 
-#            "Respuesta del Cred a un impulso en el PIB",
-#            "% del PIB", 
-#            intervalo = T)
-
 pib_a_cred_acum <- irf_comparativo(modelos, 
                                    nombres = paste("mod", c("1", "2", "3"), sep = ""),
-                                   impulse_var = "pibr_yoy" ,
+                                   impulse_var = "log_pibryoy" ,
                                    resp_var = "cred_pib",
                                    acumulado = T)
 
@@ -1064,29 +1085,4 @@ irf_ggplot(pib_a_cred_acum,
 
 ```
 
-```{r echo=F}
-
-apert_a_pib <- irf_comparativo(list(mod3),
-                               nombres = "mod3", 
-                               impulse_var = "apert_comercial", 
-                               resp_var = "pibr_yoy", 
-                               acumulado = T)
-
-irf_ggplot(apert_a_pib, 
-           "Respuesta del PIB a un impulso la apertura comercial (Efecto Acumulado)",
-           "%", 
-           intervalo = T)
-
-pibusa_a_pib <- irf_comparativo(list(mod3),
-                                nombres = "mod3",
-                                impulse_var = "pibusa_yoy",
-                                resp_var = "pibr_yoy",
-                                acumulado = T)
-
-irf_ggplot(pibusa_a_pib, 
-           "Respuesta del PIB a un impulso en en el crecimiento del PIB de USA (Acum.)",
-           "%", 
-           intervalo = T)
-
-```
 
