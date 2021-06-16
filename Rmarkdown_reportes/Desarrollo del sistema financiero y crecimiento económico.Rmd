@@ -872,6 +872,19 @@ roots(mod2, modulus = T)
 stability(mod2, type = "OLS-CUSUM") %>% plot()
 ```
 
+#### 5. Comparativo vs modelo 1
+
+```{r}
+
+logLik(mod1)
+logLik(mod2)
+
+lrtest(mod1, mod2)
+
+```
+
+
+
 ## Modelo VAR 3
 
 **Características del modelo:**\

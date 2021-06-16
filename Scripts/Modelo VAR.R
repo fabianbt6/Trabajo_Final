@@ -163,7 +163,7 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib),
       ecdet = "const") %>% 
   summary()
 
-#Exogeneidad debil
+#Exogeneidad debil===================
 
 jo_test <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib, apert_comercial, tbp, ied_pib), 
       type = "trace",
@@ -445,6 +445,9 @@ plot(cred_a_pib_mod2)
 fevd(mod2, n.ahead = 10) %>% plot()
 
 #Comparativo contra el modelo parsimonioso
+
+logLik(mod1)
+logLik(mod2)
 
 lrtest(mod1, mod2) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
 
