@@ -60,13 +60,13 @@ data <- data_original %>%
          log_pibryoy = log(pibr_yoy + 1), 
          pibusa_yoy = crecimiento_interanual(data_original$fecha, data_original$pibusa),
          log_pibusayoy = log(pibusa_yoy + 1),
-         inflacion = crecimiento_interanual(data_original$fecha, data_original$ipc) * 100,
-         vartc = crecimiento_interanual(data_original$fecha, data_original$tc) * 100,
-         mif = mif * 100,
-         ied_pib = (ied * tc / pibn) * 100,
+         inflacion = crecimiento_interanual(data_original$fecha, data_original$ipc),
+         vartc = crecimiento_interanual(data_original$fecha, data_original$tc),
+         mif = mif,
+         ied_pib = (ied * tc / pibn),
          tir = tbp - inflacion,
          cred_pib = cred / pibn_rollsum_4q, 
-         apert_comercial = (exp + imp) / pibn * 100, 
+         apert_comercial = (exp + imp) / pibn, 
          cred_yoy = crecimiento_interanual_pbs(fecha, cred_pib)) %>% 
   na.omit()
 

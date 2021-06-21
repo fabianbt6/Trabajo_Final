@@ -163,6 +163,15 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib),
       ecdet = "const") %>% 
   summary()
 
+#Cointegración incluyendo covariables=======================
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), 
+      type = "trace",  
+      K = 2, 
+      dumvar = dplyr::select(data, apert_comercial, tbp, inflacion, ied_pib),
+      ecdet = "const") %>% 
+  summary()
+
 #Exogeneidad debil===================
 
 jo_test <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib, apert_comercial, tbp, ied_pib), 
@@ -466,10 +475,10 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
           exogen = d_2Q20_ts)
 
 #Modelo VAR 3===============================
-mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib, apert_comercial), 
+mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
-            lag.max = 8, ic = "AIC",
-            exogen = dplyr::select(data, tbp, ied_pib, d_2Q20))
+            lag.max = 12, ic = "AIC",
+            exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, inflacion, d_2Q20))
 
 summary(mod3)
 
@@ -855,10 +864,10 @@ irf_ggplot <- function(data, tit, lab, intervalo = T) {
   
 }  
     
-modelos <- list(mod1, mod2, mod3) 
+modelos <- list(mod1, mod2) 
 
 cred_a_pib <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
+                              nombres = paste("mod", c("1", "2"), sep = ""), 
                               impulse_var = "cred_pib", 
                               resp_var = "log_pibryoy", 
                               acumulado = T)
@@ -870,7 +879,7 @@ irf_ggplot(cred_a_pib,
            intervalo = T)
 
 pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
+                              nombres = paste("mod", c("1", "2"), sep = ""), 
                               impulse_var = "log_pibryoy" , 
                               resp_var = "cred_pib", 
                               acumulado = T)
