@@ -20,6 +20,7 @@ library(vars)
 library(latex2exp)
 library(tsDyn)
 library(tikzDevice)
+library(gtsummary)
 
 #Condicion de Estabilidad (No requiere cargar datos)==========================
 
@@ -77,6 +78,17 @@ setwd(oldwd)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 load(file = "../Datos/data.RData")
 
+mod_lm <- lm(log_pibryoy ~ cred_pib, data = data)
+summary(mod_lm)
+
+mydata <- tibble(fecha = data$fecha,
+                 log_pibryoy = data$log_pibryoy,
+                 residuos = scale(mod_lm$residuals),
+                 cred_pib = data$cred_pib,
+                 `Desempeño Económico` = ifelse(data$pibr_yoy < 0, 
+                                                "Contracción", 
+                                                "Crecimiento"),
+                 flag  = ifelse(abs(residuos) > 2, "1", "0"))
 #Grafico crecimiento del PIBr=========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_pibryoy.tex')
@@ -113,7 +125,7 @@ dev.off()
 
 setwd(oldwd)
 
-#Apertura Comercial en función del PIB===================
+#Grafico Apertura Comercial en función del PIB===================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_apertcomercial.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -131,7 +143,7 @@ print(g_apertcomercial)
 dev.off()
 
 setwd(oldwd)
-#IED en función del PIB===================
+#Grafico IED en función del PIB===================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_ied.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -150,7 +162,7 @@ dev.off()
 setwd(oldwd)
 
 
-#TBP===================
+#Grafico TBP===================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_tbp.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -168,7 +180,7 @@ dev.off()
 
 setwd(oldwd)
 
-#inflación===================
+#Grafico inflación===================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_inflacion.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -188,3 +200,95 @@ setwd(oldwd)
 
 data %>% dplyr::select(tbp, apert_comercial, ied_pib) %>% 
   cor()
+
+#Tabla estadísticas descriptivas======================
+vars <- tiblle(c("log_pibryoy", "cred_pib", c("apert_comercial", "ied_pib", "tbp")) 
+vars_nombre <- c(paste0("Crecimiento económico", footnote_marker_alphabet(1, "latex")), 
+                 paste0("Desarrollo del Sistema Financiero", footnote_marker_alphabet(2, "latex")), 
+                 paste0("Apertura Comercial", footnote_marker_alphabet(2, "latex")), 
+                 paste0("IED", footnote_marker_alphabet(2, "latex")), 
+                 paste0("TBP", footnote_marker_alphabet(3, "latex")))
+vars_unidades <- c("Crecimiento", "En relación al PIB Nominal", 
+                 "En relación al PIB Nominal", "En relación al PIB Nominal", "Porcentaje")
+
+variables_descripciones <- tibble(vars, vars_nombre, vars_unidades, orden = 1:length(vars))
+
+data_long <- data %>% 
+  dplyr::select(fecha, all_of(vars)) %>% 
+  pivot_longer(-fecha, "Indicador", values_to = "valor")
+
+View(data)
+
+tab_descriptivos <- data_long %>%   
+  group_by(Indicador) %>% 
+  summarise(Promedio = round(mean(valor), 3), 
+            Mínimo  = round(min(valor), 3), 
+            Máximo = round(max(valor), 3), 
+            `Desviación Estándar` = round(sd(valor), 3), 
+            `Coef. de Variación`  = round(`Desviación Estándar` / Promedio, 3)) %>% 
+  ungroup() %>% 
+  left_join(variables_descripciones, by = c("Indicador" = "vars")) %>% 
+  mutate(Indicador = vars_nombre) %>% 
+  arrange(orden) %>% 
+  select(-c("vars_nombre", "vars_unidades", "orden"))
+  
+setwd("C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras")
+
+knitr::kable(tab_descriptivos, booktabs = TRUE, 
+             caption = "Estadísticas Descriptivas",
+             label = "descritptivos",
+             format = "latex") %>% 
+  kable_styling(latex_options = c("striped", "scale_down"), full_width = T,
+                font_size = 7) %>% 
+  column_spec(1, width = "10em") %>% 
+  footnote(general = "Fuente: Banco Central de Costa Rica. ",
+           alphabet = c("Unidad de medida: crecimiento anual; ", 
+                        "Unidad de medida: En términos del PIB; ", 
+                        "Unidad de medida: Porcentaje") 
+           ) %>% 
+  readr::write_lines(file = "tabla_descriptivos.tex")
+
+
+#Grafico crecimiento economico vs desarrollo del sistema financiero===================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_crec_vs_dsf.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_crec_vs_dsf <- mydata %>%
+  mutate(`Desarrollo del S.F.` = ifelse(cred_pib > 0.401, "Alto", "Bajo"), 
+         Periodo = ifelse(fecha < "2008-03-01", "Antes de 2008", "Posterior a 2008")) %>% 
+  ggplot(aes(x = log_pibryoy, y = cred_pib, fill = Periodo)) + 
+  ylab("Crédito al Sector Privado (proporción del PIBn)") + 
+  xlab("Crecimiento interanual del PIB") +
+  geom_point(aes(colour = Periodo), size = 1) + 
+  geom_smooth(method = "lm", se = F, color = "grey", size = 0.65) +
+  scale_color_manual(values = c("#00C784", "#C70043")) +
+  theme_minimal() %+replace% 
+  theme(legend.position = "top", 
+        title = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.spacing.x = unit(0.35, 'cm'),
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6))
+
+print(g_crec_vs_dsf)
+
+dev.off()
+
+setwd(oldwd)
+
+data %>% dplyr::select(log_pibryoy, cred_pib) %>% 
+  cor()
+
+data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
+  filter(fecha < "2008-03-01") %>% 
+  dplyr::select(-fecha) %>% 
+  cor()
+
+data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
+  filter(fecha >= "2008-03-01") %>% 
+  dplyr::select(-fecha) %>% 
+  cor()
+
