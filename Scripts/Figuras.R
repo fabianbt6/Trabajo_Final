@@ -292,3 +292,22 @@ data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>%
   dplyr::select(-fecha) %>% 
   cor()
 
+
+
+cormat <- data %>% 
+  select(log_pibryoy, cred_pib, ied_pib, apert_comercial, tbp) %>% 
+  cor() %>% 
+  round(2)
+
+colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP")
+row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP")
+
+knitr::kable(cormat, booktabs = TRUE, 
+             caption = "Matriz de correlación",
+             label = "cormat",
+             format = "latex") %>% 
+  kable_styling(latex_options = c("striped", "scale_down"), full_width = T,
+                font_size = 7) %>% 
+  column_spec(1, width = "10em") 
+  
+
