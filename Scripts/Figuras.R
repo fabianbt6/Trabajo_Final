@@ -81,6 +81,10 @@ load(file = "../Datos/data.RData")
 mod_lm <- lm(log_pibryoy ~ cred_pib, data = data)
 summary(mod_lm)
 
+vars <- tibble(indicador = c("log_pibryoy", "cred_pib", "apert_comercial", "ied_pib", "tbp"), 
+               vars_nombre = c("Crecimiento económico", "Desarrollo del Sistema Financiero", 
+                               "Apertura Comercial", "IED", "TBP"))
+               
 mydata <- tibble(fecha = data$fecha,
                  log_pibryoy = data$log_pibryoy,
                  residuos = scale(mod_lm$residuals),
@@ -89,6 +93,7 @@ mydata <- tibble(fecha = data$fecha,
                                                 "Contracción", 
                                                 "Crecimiento"),
                  flag  = ifelse(abs(residuos) > 2, "1", "0"))
+
 #Grafico crecimiento del PIBr=========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_pibryoy.tex')
@@ -265,7 +270,7 @@ g_crec_vs_dsf <- mydata %>%
   geom_point(aes(colour = Periodo), size = 1) + 
   geom_smooth(method = "lm", se = F, color = "grey", size = 0.65) +
   scale_color_manual(values = c("#00C784", "#C70043")) +
-  theme_minimal() %+replace% 
+  theme_classic() %+replace% 
   theme(legend.position = "top", 
         title = element_text(size = 6),
         legend.text = element_text(size = 6),
@@ -282,6 +287,7 @@ setwd(oldwd)
 data %>% dplyr::select(log_pibryoy, cred_pib) %>% 
   cor()
 
+#Tabla de correlaciones=================================
 data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
   filter(fecha < "2008-03-01") %>% 
   dplyr::select(-fecha) %>% 
@@ -311,3 +317,62 @@ knitr::kable(cormat, booktabs = TRUE,
   column_spec(1, width = "10em") 
   
 
+
+#Grafico correlogramas============================
+
+acf_plot <- function(mydata, alfa) {
+  
+  ic <- qnorm(1 - alfa / 2) / sqrt(nrow(mydata))
+  
+  dataset <- mydata %>% 
+    pivot_longer(-fecha, names_to = "indicador", values_to = "valor") %>% 
+    dplyr::select(-fecha) %>% 
+    nest(data = valor) %>% 
+    summarise(indicador = indicador, 
+              acf = map(data, ~ acf(x = .,
+                                    lag.max = NULL, 
+                                    plot = F)$acf), 
+              pacf = map(data, ~ acf(x = .,
+                                     lag.max = NULL, 
+                                     plot = F, 
+                                     type = "partial")$acf)) %>% 
+    pivot_longer(-indicador, names_to = "tipo", values_to = "valor") %>% 
+    unnest(valor) %>% 
+    group_by(indicador, tipo) %>% 
+    mutate(rezago = 1:n())
+  
+  g <- dataset %>%
+    dplyr::filter(tipo == "acf") %>%
+    ggplot(aes(x = rezago,  y = valor)) +
+    geom_segment(mapping = aes(xend = rezago, yend = 0)) +
+    geom_hline(yintercept = 0) +
+    geom_hline(yintercept = ic, linetype = 2, color = 'darkblue') +
+    geom_hline(yintercept = -ic, linetype = 2, color = 'darkblue') +
+    facet_grid(indicador ~ .) +
+    theme_bw()
+  
+  return(g)
+  
+}
+
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_acf_pacf.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_acf_pacf <- data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
+  `colnames<-`(c("fecha", "Crecimiento Económico", "Desarrollo del S.F.")) %>% 
+  acf_plot(alfa = 0.05) + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 7))
+
+print(g_acf_pacf)
+
+dev.off()
+
+setwd(oldwd)
