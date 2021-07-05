@@ -340,10 +340,12 @@ cred_a_pib_cum_mod1 <- irf(mod1,
 plot(cred_a_pib_mod1)
 
 #Modelo VAR 2===============================
-mod2 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
-            type = "both", 
+
+mod2 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+            type = "both",
             lag.max = 12, ic = "AIC",
             exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, d_2Q20))
+
 
 summary(mod2)
 
@@ -370,18 +372,6 @@ serial.test(mod2, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod2, lags.pt = 16, type = "ES")
 
 acf(residuals(mod2))
-
-ggCcf(x = residuals_mod2$res.pibr_yoy_diff, y = residuals_mod2$res.cred_pib_diff, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
-
-ggCcf(x = residuals_mod2$res.pibr_yoy_diff, y = residuals_mod2$res.mif_diff, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
-
-ggCcf(x = residuals_mod2$res.cred_pib_diff, y = residuals_mod2$res.mif_diff, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo MIF")
 
 ### Heterocedasticidad
 arch.test(mod2, lags.multi = 5, multivariate.only = T)
@@ -477,7 +467,7 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
 #Modelo VAR 3===============================
 mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
-            lag.max = 12, ic = "AIC",
+            lag.max = 9, ic = "AIC",
             exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, inflacion, d_2Q20))
 
 summary(mod3)
@@ -506,17 +496,6 @@ serial.test(mod3, lags.pt = 16, type = "BG")
 serial.test(mod3, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod3, lags.pt = 16, type = "ES")
 
-ggCcf(x = residuals_mod3$res.pibryoy_ts, y = residuals_mod3$res.credyoy_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
-
-ggCcf(x = residuals_mod3$res.pibryoy_ts, y = residuals_mod3$res.tbp_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo margen de intermediación")
-
-ggCcf(x = residuals_mod3$res.credyoy_ts, y = residuals_mod3$res.tbp_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
 
 ### Heterocedasticidad
 arch.test(mod3, lags.multi = 5, multivariate.only = T)
@@ -563,23 +542,9 @@ residuals_mod3_long %>%
   theme_bw() + 
   ggtitle("QQplots los residuos del Modelo VAR")
 
-m2_data <- tibble(residuals_mbasico, mod3$datamat)
-
-mbasico_data %>% 
-  ggplot(aes(y = res.pibryoy_ts, x = covariables.tc_ts)) + 
-  geom_point() + 
-  geom_smooth(method = "lm", se = F) + 
-  theme_bw()
-
-mbasico_data %>% 
-  ggplot(aes(y = res.credyoy_ts, x = covariables.tbp_ts)) + 
-  geom_point() + 
-  geom_smooth(method = "lm", se = F) + 
-  theme_bw()
-
 #Granger causalidad
 causality(mod3, cause = "cred_pib")
-causality(mod3, cause = "pibr_yoy")
+causality(mod3, cause = "log_pibryoy")
 causality(mod3, cause = "pibusa_yoy")
 
 #Funciones impulso respuesta
@@ -864,10 +829,10 @@ irf_ggplot <- function(data, tit, lab, intervalo = T) {
   
 }  
     
-modelos <- list(mod1, mod2) 
+modelos <- list(mod2, mod3) 
 
 cred_a_pib <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2"), sep = ""), 
+                              nombres = paste("mod", c("2", "3"), sep = ""), 
                               impulse_var = "cred_pib", 
                               resp_var = "log_pibryoy", 
                               acumulado = T)
@@ -879,7 +844,7 @@ irf_ggplot(cred_a_pib,
            intervalo = T)
 
 pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2"), sep = ""), 
+                              nombres = paste("mod", c("2", "3"), sep = ""), 
                               impulse_var = "log_pibryoy" , 
                               resp_var = "cred_pib", 
                               acumulado = T)

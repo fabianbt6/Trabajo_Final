@@ -77,6 +77,7 @@ setwd(oldwd)
 #Cargar datos====================
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 load(file = "../Datos/data.RData")
+load(file = "../Datos/data_diff.RData")
 
 mod_lm <- lm(log_pibryoy ~ cred_pib, data = data)
 summary(mod_lm)
@@ -93,6 +94,42 @@ mydata <- tibble(fecha = data$fecha,
                                                 "Contracción", 
                                                 "Crecimiento"),
                  flag  = ifelse(abs(residuos) > 2, "1", "0"))
+
+#Funciones===============================
+acf_plot <- function(mydata, alfa) {
+  
+  ic <- qnorm(1 - alfa / 2) / sqrt(nrow(mydata))
+  
+  dataset <- mydata %>% 
+    pivot_longer(-fecha, names_to = "indicador", values_to = "valor") %>% 
+    dplyr::select(-fecha) %>% 
+    nest(data = valor) %>% 
+    summarise(indicador = indicador, 
+              acf = map(data, ~ acf(x = .,
+                                    lag.max = NULL, 
+                                    plot = F)$acf), 
+              pacf = map(data, ~ acf(x = .,
+                                     lag.max = NULL, 
+                                     plot = F, 
+                                     type = "partial")$acf)) %>% 
+    pivot_longer(-indicador, names_to = "tipo", values_to = "valor") %>% 
+    unnest(valor) %>% 
+    group_by(indicador, tipo) %>% 
+    mutate(rezago = 1:n())
+  
+  g <- dataset %>%
+    dplyr::filter(tipo == "acf") %>%
+    ggplot(aes(x = rezago,  y = valor)) +
+    geom_segment(mapping = aes(xend = rezago, yend = 0)) +
+    geom_hline(yintercept = 0) +
+    geom_hline(yintercept = ic, linetype = 2, color = 'darkblue') +
+    geom_hline(yintercept = -ic, linetype = 2, color = 'darkblue') +
+    facet_grid(indicador ~ .) +
+    theme_bw()
+  
+  return(g)
+  
+}
 
 #Grafico crecimiento del PIBr=========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
@@ -207,16 +244,17 @@ data %>% dplyr::select(tbp, apert_comercial, ied_pib) %>%
   cor()
 
 #Tabla estadísticas descriptivas======================
-vars <- tiblle(c("log_pibryoy", "cred_pib", c("apert_comercial", "ied_pib", "tbp")) 
+vars <-  c("log_pibryoy", "cred_pib", "apert_comercial", "ied_pib", "inflacion", "tbp") 
 vars_nombre <- c(paste0("Crecimiento económico", footnote_marker_alphabet(1, "latex")), 
                  paste0("Desarrollo del Sistema Financiero", footnote_marker_alphabet(2, "latex")), 
                  paste0("Apertura Comercial", footnote_marker_alphabet(2, "latex")), 
-                 paste0("IED", footnote_marker_alphabet(2, "latex")), 
+                 paste0("IED", footnote_marker_alphabet(2, "latex")),
+                 "Inflación",
                  paste0("TBP", footnote_marker_alphabet(3, "latex")))
 vars_unidades <- c("Crecimiento", "En relación al PIB Nominal", 
                  "En relación al PIB Nominal", "En relación al PIB Nominal", "Porcentaje")
 
-variables_descripciones <- tibble(vars, vars_nombre, vars_unidades, orden = 1:length(vars))
+variables_descripciones <- tibble(vars, vars_nombre, orden = 1:length(vars))
 
 data_long <- data %>% 
   dplyr::select(fecha, all_of(vars)) %>% 
@@ -235,7 +273,7 @@ tab_descriptivos <- data_long %>%
   left_join(variables_descripciones, by = c("Indicador" = "vars")) %>% 
   mutate(Indicador = vars_nombre) %>% 
   arrange(orden) %>% 
-  select(-c("vars_nombre", "vars_unidades", "orden"))
+  select(-c("vars_nombre", "orden"))
   
 setwd("C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras")
 
@@ -299,14 +337,13 @@ data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>%
   cor()
 
 
-
 cormat <- data %>% 
-  select(log_pibryoy, cred_pib, ied_pib, apert_comercial, tbp) %>% 
+  select(log_pibryoy, cred_pib, ied_pib, apert_comercial, tbp, inflacion) %>% 
   cor() %>% 
   round(2)
 
-colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP")
-row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP")
+colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP", "Inflación")
+row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP", "Inflación")
 
 knitr::kable(cormat, booktabs = TRUE, 
              caption = "Matriz de correlación",
@@ -318,43 +355,7 @@ knitr::kable(cormat, booktabs = TRUE,
   
 
 
-#Grafico correlogramas============================
-
-acf_plot <- function(mydata, alfa) {
-  
-  ic <- qnorm(1 - alfa / 2) / sqrt(nrow(mydata))
-  
-  dataset <- mydata %>% 
-    pivot_longer(-fecha, names_to = "indicador", values_to = "valor") %>% 
-    dplyr::select(-fecha) %>% 
-    nest(data = valor) %>% 
-    summarise(indicador = indicador, 
-              acf = map(data, ~ acf(x = .,
-                                    lag.max = NULL, 
-                                    plot = F)$acf), 
-              pacf = map(data, ~ acf(x = .,
-                                     lag.max = NULL, 
-                                     plot = F, 
-                                     type = "partial")$acf)) %>% 
-    pivot_longer(-indicador, names_to = "tipo", values_to = "valor") %>% 
-    unnest(valor) %>% 
-    group_by(indicador, tipo) %>% 
-    mutate(rezago = 1:n())
-  
-  g <- dataset %>%
-    dplyr::filter(tipo == "acf") %>%
-    ggplot(aes(x = rezago,  y = valor)) +
-    geom_segment(mapping = aes(xend = rezago, yend = 0)) +
-    geom_hline(yintercept = 0) +
-    geom_hline(yintercept = ic, linetype = 2, color = 'darkblue') +
-    geom_hline(yintercept = -ic, linetype = 2, color = 'darkblue') +
-    facet_grid(indicador ~ .) +
-    theme_bw()
-  
-  return(g)
-  
-}
-
+#Grafico correlogramas niveles============================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_acf_pacf.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -376,3 +377,111 @@ print(g_acf_pacf)
 dev.off()
 
 setwd(oldwd)
+
+
+
+#Tabla de pruebas de raíz unitaria niveles=====================================
+
+pibr_df <- ur.df(data$log_pibryoy, type = "trend", selectlags = "AIC") %>% 
+  summary()
+
+cred_pib_df <- ur.df(data$cred_pib, type = "trend", selectlags = "AIC") %>% 
+  summary()
+
+tab_df <- tibble("Estadístico" = round(t(pibr_df@teststat)[, 1], 2) , 
+                 pibr_df@cval %>% as_tibble()) %>% 
+  bind_rows(tibble("Estadístico" = round(t(cred_pib_df@teststat)[, 1], 2),
+                  cred_pib_df@cval %>% as_tibble())) %>% 
+  mutate(`Parámetro` = c("tau_3", "phi_2", "phi_3", "tau_3", "phi_2", "phi_3")) %>% 
+  relocate(`Parámetro`, .before = "Estadístico")
+
+knitr::kable(tab_df, booktabs = TRUE, 
+             caption = "Prueba Dickey-Fuller de las series en niveles",
+             label = "DF_niveles",
+             format = "latex") %>% 
+  kable_styling(font_size = 8) %>% 
+  column_spec(1, width = "10em") %>% 
+  add_header_above(c("", "", "Valores Críticos"  = 3)) %>% 
+  pack_rows("Crecimiento Económico", 1, 3) %>% 
+  pack_rows("Desarrollo del S.F.", 4, 6)
+
+#Grafico correlogramas primeras diff============================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_acf_pacf_diff.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_acf_pacf_diff <- data_diff %>% dplyr::select(fecha, log_pibryoy_diff, cred_pib_diff) %>% 
+  `colnames<-`(c("fecha", "Crecimiento Económico", "Desarrollo del S.F.")) %>% 
+  acf_plot(alfa = 0.05) + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 7))
+
+print(g_acf_pacf_diff)
+
+dev.off()
+
+setwd(oldwd)
+
+
+
+#Tabla de pruebas de raíz unitaria primeras diff=====================================
+
+pibr_diff_df <- ur.df(data_diff$log_pibryoy_diff, type = "drift", selectlags = "AIC") %>% 
+  summary()
+
+cred_pib_diff_df <- ur.df(data_diff$cred_pib_diff, type = "drift", selectlags = "AIC") %>% 
+  summary()
+
+tab_diff_df <- tibble("Estadístico" = round(t(pibr_diff_df@teststat)[, 1], 2) , 
+                 pibr_diff_df@cval %>% as_tibble()) %>% 
+  bind_rows(tibble("Estadístico" = round(t(cred_pib_diff_df@teststat)[, 1], 2),
+                   cred_pib_diff_df@cval %>% as_tibble())) %>% 
+  mutate(`Parámetro` = c("tau_2", "phi_1", "tau_2", "phi_1")) %>% 
+  relocate(`Parámetro`, .before = "Estadístico")
+
+knitr::kable(tab_diff_df, booktabs = TRUE, 
+             caption = "Prueba Dickey-Fuller de las series en primeras diferencias",
+             label = "DF_diff",
+             format = "latex") %>% 
+  kable_styling(font_size = 8) %>% 
+  column_spec(1, width = "10em") %>% 
+  add_header_above(c("", "", "Valores Críticos"  = 3)) %>% 
+  pack_rows("Crecimiento Económico", 1, 2) %>% 
+  pack_rows("Desarrollo del S.F.", 3, 4)
+
+#Tabla resultados del análisis de cointegración====================
+
+ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), 
+      type = "trace",  
+      K = 2, 
+      dumvar = dplyr::select(data, apert_comercial, tbp, inflacion, ied_pib),
+      ecdet = "const") %>% 
+  summary()
+
+#Tabla Test de Cointegración Engle-Granger==============================
+mod_lm <- lm(log_pibryoy ~ cred_pib, data= data)
+
+resid_modlm <- ur.df(residuals(mod_lm) , type = "none", selectlags = "AIC") %>% 
+  summary()
+
+tab_res_df <- tibble("Estadístico" = round(t(resid_modlm@teststat)[, 1], 2) , 
+                     resid_modlm@cval %>% as_tibble())
+  mutate(`Parámetro` = c("tau_1")) %>% 
+  relocate(`Parámetro`, .before = "Estadístico")
+
+knitr::kable(tab_res_df, booktabs = TRUE, 
+             caption = "Prueba Dickey-Fuller del residuo",
+             label = "DF_res",
+             format = "latex") %>% 
+  kable_styling(font_size = 8) %>% 
+  column_spec(1, width = "10em") %>% 
+  add_header_above(c("", "", "Valores Críticos"  = 3))
+
+
+
