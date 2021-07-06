@@ -11,6 +11,7 @@ library(ggiraph)
 library(plotly)
 library(lubridate)
 library(urca)
+library(fUnitRoots)
 library(zoo)
 library(car)
 library(ggiraph)
@@ -461,17 +462,27 @@ ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib),
       type = "trace",  
       K = 2, 
       dumvar = dplyr::select(data, apert_comercial, tbp, inflacion, ied_pib),
-      ecdet = "const") %>% 
+      ecdet = "const", 
+      spec = "longrun") %>% 
   summary()
 
 #Tabla Test de Cointegración Engle-Granger==============================
 mod_lm <- lm(log_pibryoy ~ cred_pib, data= data)
+summary(mod_lm)
 
 resid_modlm <- ur.df(residuals(mod_lm) , type = "none", selectlags = "AIC") %>% 
   summary()
 
+unitrootTest(residuals(mod_lm), lags = 1, type = "nc")
+
+unitrootTable(trend = "nc", statistic = "t")
+qunitroot(0.99, length(residuals(mod_lm)), trend = "nc", statistic = "t")  
+
+
 tab_res_df <- tibble("Estadístico" = round(t(resid_modlm@teststat)[, 1], 2) , 
-                     resid_modlm@cval %>% as_tibble())
+                     `1pct` = -round(qunitroot(0.99, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2), 
+                     `5pct` = -round(qunitroot(0.95, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2), 
+                     `10pct` = -round(qunitroot(0.90, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2)) %>% 
   mutate(`Parámetro` = c("tau_1")) %>% 
   relocate(`Parámetro`, .before = "Estadístico")
 
@@ -481,7 +492,6 @@ knitr::kable(tab_res_df, booktabs = TRUE,
              format = "latex") %>% 
   kable_styling(font_size = 8) %>% 
   column_spec(1, width = "10em") %>% 
-  add_header_above(c("", "", "Valores Críticos"  = 3))
-
-
+  add_header_above(c("", "", "Valores Críticos"  = 3)) %>% 
+  footnote(general = "Valores críticos corresponden a Mackinnon")
 
