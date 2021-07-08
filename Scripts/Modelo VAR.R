@@ -351,11 +351,6 @@ summary(mod2)
 
 roots(mod2, modulus = T)
 
-VARselect(cbind(pibryoy_ts, credyoy_ts), 
-          12, 
-          type = "none", 
-          exogen = d_2Q20_ts)
-
 ##Evaluación del modelo básico
 
 ### Autocorrelación serial
@@ -464,11 +459,11 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
           type = "none", 
           exogen = d_2Q20_ts)
 
-#Modelo VAR 3===============================
-mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
-            type = "both", 
-            lag.max = 9, ic = "AIC",
-            exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, inflacion, d_2Q20))
+#Modelo VAR 3 (Seleccionado)===============================
+mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+            type = "both",
+            lag.max = 12, ic = "AIC",
+            exogen = dplyr::select(data, log_pibusayoy, apert_comercial, d_2Q20))
 
 summary(mod3)
 
@@ -491,11 +486,12 @@ residuals_mod3 <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod
 residuals_mod3_long <- residuals_mod3 %>%
   pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
 
+acf(residuals(mod3))
+
 serial.test(mod3, lags.pt = 16, type = "PT.asymptotic")
 serial.test(mod3, lags.pt = 16, type = "BG")
 serial.test(mod3, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod3, lags.pt = 16, type = "ES")
-
 
 ### Heterocedasticidad
 arch.test(mod3, lags.multi = 5, multivariate.only = T)
@@ -545,62 +541,7 @@ residuals_mod3_long %>%
 #Granger causalidad
 causality(mod3, cause = "cred_pib")
 causality(mod3, cause = "log_pibryoy")
-causality(mod3, cause = "pibusa_yoy")
 
-#Funciones impulso respuesta
-pib_a_cred_mod3 <- irf(mod3,
-                  impulse = "pibryoy_ts",
-                  response = "credyoy_ts",
-                  n.ahead = 12,
-                  cumulative = F)
-
-plot(pib_a_cred_mod3)
-
-pib_a_cred_cum_mod3 <- irf(mod3,
-                         impulse = "pibryoy_ts",
-                         response = "credyoy_ts",
-                         n.ahead = 12,
-                         cumulative = T)
-
-cred_a_pib_mod3 <- irf(mod3,
-                     impulse = "credyoy_ts",
-                     response = "pibryoy_ts",
-                     n.ahead = 12,
-                     cumulative = F)
-
-plot(cred_a_pib_mod3)
-
-cred_a_pib_cum_mod3 <- irf(mod3,
-                         impulse = "credyoy_ts",
-                         response = "pibryoy_ts",
-                         n.ahead = 12,
-                         cumulative = T,
-                         boot = T,
-                         ortho = T)
-
-mif_a_pib_mod3 <- irf(mod3,
-                    impulse = "tbp_ts",
-                    response = "pibryoy_ts",
-                    n.ahead = 12,
-                    cumulative = F,
-                    boot = T,
-                    ortho = T)
-plot(mif_a_pib_mod3)
-
-mif_a_pib_cum_mod3 <- irf(mod3,
-                        impulse = "tbp_ts",
-                        response = "pibryoy_ts",
-                        n.ahead = 12,
-                        cumulative = T)
-
-mif_a_cred_mod3 <- irf(mod3,
-                     impulse = "tbp_ts",
-                     response = "credyoy_ts",
-                     n.ahead = 12,
-                     cumulative = T)
-plot(mif_a_cred_mod3)
-
-fevd(mod3, n.ahead = 10) %>% plot()
 
 #Comparativo contra el modelo parsimonioso
 
@@ -610,11 +551,14 @@ lrtest(mod1, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en 
 
 lrtest(mod2, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
 
+ 
 #Modelo VAR 4===============================
-mod4 <- VAR(data %>% dplyr::select(pibr_yoy, cred_pib, mif, apert_comercial),
+mod4 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
             type = "both",
-            lag.max = 8, ic = "AIC",
-            exogen = data %>% dplyr::select(pibusa_yoy, petroleo, d_2Q04, d_4Q07, d_1Q20, d_2Q20))
+            lag.max = 12, ic = "AIC",
+            exogen = dplyr::select(data, log_pibusayoy, apert_comercial, d_2Q20))
+
+summary(mod4)
 
 roots(mod4, modulus = T)
 
@@ -627,28 +571,20 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
 
 ### Autocorrelación serial
 
+acf(residuals(mod4))
+
 residuals_mod4 <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod4)) + 1):nrow(data)],
                              res = scale(residuals(mod4))) %>% as_tibble()
 
 residuals_mod4_long <- residuals_mod4 %>%
   pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
 
+acf(residuals(mod4))
+
 serial.test(mod4, lags.pt = 16, type = "PT.asymptotic")
 serial.test(mod4, lags.pt = 16, type = "BG")
 serial.test(mod4, lags.pt = 16, type = "PT.adjusted")
 serial.test(mod4, lags.pt = 16, type = "ES")
-
-ggCcf(x = residuals_mod4$res.pibryoy_ts, y = residuals_mod4$res.credyoy_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
-
-ggCcf(x = residuals_mod4$res.pibryoy_ts, y = residuals_mod4$res.tbp_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo margen de intermediación")
-
-ggCcf(x = residuals_mod4$res.credyoy_ts, y = residuals_mod4$res.tbp_ts, 
-      type = "correlation") + 
-  ggtitle("Residuos del modelo PIB vs residuos modelo Cred")
 
 ### Heterocedasticidad
 arch.test(mod4, lags.multi = 5, multivariate.only = T)
@@ -671,7 +607,6 @@ resz_mod4 <- residuals_mod4_long %>%
   theme_bw() %+replace% 
   theme(panel.background = element_rect(fill = NA), legend.position = "none")
 
-dev.off()
 girafe(ggobj = resz_mod4,
        width_svg = 10, height_svg = 4,
        options = list(
@@ -687,6 +622,7 @@ residuals_mod4_long %>%
   theme_bw() + 
   ggtitle("Gráficos de densidad para los residuos del Modelo VAR")
 
+#dev.off()
 residuals_mod4_long %>% 
   ggplot(aes(sample = `residuo estandarizado`)) + 
   stat_qq() +
@@ -695,90 +631,58 @@ residuals_mod4_long %>%
   theme_bw() + 
   ggtitle("QQplots los residuos del Modelo VAR")
 
-m2_data <- tibble(residuals_mbasico, mod4$datamat)
-
-mbasico_data %>% 
-  ggplot(aes(y = res.pibryoy_ts, x = covariables.tc_ts)) + 
-  geom_point() + 
-  geom_smooth(method = "lm", se = F) + 
-  theme_bw()
-
-mbasico_data %>% 
-  ggplot(aes(y = res.credyoy_ts, x = covariables.tbp_ts)) + 
-  geom_point() + 
-  geom_smooth(method = "lm", se = F) + 
-  theme_bw()
-
 #Granger causalidad
-causality(mod4, cause = "credyoy_ts")
-causality(mod4, cause = "pibryoy_ts")
+causality(mod4, cause = "cred_pib")
+causality(mod4, cause = "log_pibryoy")
 
-#Funciones impulso respuesta
-pib_a_cred_mod4 <- irf(mod4,
-                     impulse = "pibryoy_ts",
-                     response = "credyoy_ts",
-                     n.ahead = 12,
-                     cumulative = F)
-
-plot(pib_a_cred_mod4)
-
-pib_a_cred_cum_mod4 <- irf(mod4,
-                         impulse = "pibryoy_ts",
-                         response = "credyoy_ts",
-                         n.ahead = 12,
-                         cumulative = T)
-
-cred_a_pib_mod4 <- irf(mod4,
-                     impulse = "credyoy_ts",
-                     response = "pibryoy_ts",
-                     n.ahead = 12,
-                     cumulative = F)
-
-plot(cred_a_pib_mod4)
-
-cred_a_pib_cum_mod4 <- irf(mod4,
-                         impulse = "credyoy_ts",
-                         response = "pibryoy_ts",
-                         n.ahead = 12,
-                         cumulative = T,
-                         boot = T,
-                         ortho = T)
-
-plot(cred_a_pib_cum_mod4)
-
-mif_a_pib_m3 <- irf(mod4,
-                    impulse = "tbp_ts",
-                    response = "pibryoy_ts",
-                    n.ahead = 12,
-                    cumulative = F,
-                    boot = T,
-                    ortho = T)
-plot(mif_a_pib_m3)
-
-mif_a_pib_cum_m3 <- irf(mod4,
-                        impulse = "tbp_ts",
-                        response = "pibryoy_ts",
-                        n.ahead = 12,
-                        cumulative = T)
-
-mif_a_cred_m3 <- irf(mod4,
-                     impulse = "tbp_ts",
-                     response = "credyoy_ts",
-                     n.ahead = 12,
-                     cumulative = T)
-plot(mif_a_cred_m3)
+plot(mif_a_cred_mod4)
 
 fevd(mod4, n.ahead = 10) %>% plot()
 
 #Comparativo contra el modelo parsimonioso
 
-lrtest(mod_var1, mod_var4) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+logLik(mod3)
 
-lrtest(mod_var2, mod_var4) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+lrtest(mod1, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+
+lrtest(mod2, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+
+
 
 #comparativo entre modelos===========================
 
-#Funciones
+mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
+            type = "both",
+            p = 12,  
+            ic = "AIC",
+            exogen = dplyr::select(data, d_2Q20))
+
+mod2 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+            type = "both",
+            p = 12,
+            exogen = dplyr::select(data, apert_comercial, tbp, ied_pib, d_2Q20))
+
+mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+            type = "both",
+            p = 12,
+            exogen = dplyr::select(data, log_pibusayoy, apert_comercial))
+
+mod4 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+            type = "both",
+            p = 12,
+            exogen = dplyr::select(data, log_pibusayoy, apert_comercial, d_2Q20))
+
+
+lrtest(mod1, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+
+lrtest(mod3, mod4) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
+
+lrtest(lm(pibr_yoy ~ 1, data = data), 
+       lm(pibr_yoy ~  pibusa, data = data))
+
+logLik(mod3)
+
+#Funciones impulso respuesta============================
 irf_comparativo <- function(modelos, nombres, impulse_var, resp_var, acumulado = F, nper = 12) {
 
   tibble(modelos = modelos) %>% 
@@ -829,10 +733,10 @@ irf_ggplot <- function(data, tit, lab, intervalo = T) {
   
 }  
     
-modelos <- list(mod2, mod3) 
+modelos <- list(mod1, mod2, mod3) 
 
 cred_a_pib <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("2", "3"), sep = ""), 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
                               impulse_var = "cred_pib", 
                               resp_var = "log_pibryoy", 
                               acumulado = T)
@@ -844,23 +748,13 @@ irf_ggplot(cred_a_pib,
            intervalo = T)
 
 pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("2", "3"), sep = ""), 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
                               impulse_var = "log_pibryoy" , 
                               resp_var = "cred_pib", 
-                              acumulado = T)
+                              acumulado = F)
 
 irf_ggplot(pib_a_cred, 
            "Respuesta del Cred a un impulso en el PIB",
            "% del PIB", 
            intervalo = T)
 
-apertcomer_a_pib <- irf_comparativo(list(mod3), 
-                              nombres = paste("mod", c("3"), sep = ""), 
-                              impulse_var = "apert_comercial" , 
-                              resp_var = "log_pibryoy", 
-                              acumulado = T)
-
-irf_ggplot(apertcomer_a_pib, 
-           "Respuesta del Cred a un impulso en el PIB",
-           "% del PIB", 
-           intervalo = T)

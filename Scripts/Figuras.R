@@ -311,11 +311,11 @@ g_crec_vs_dsf <- mydata %>%
   scale_color_manual(values = c("#00C784", "#C70043")) +
   theme_classic() %+replace% 
   theme(legend.position = "top", 
-        title = element_text(size = 6),
-        legend.text = element_text(size = 6),
+        title = element_text(size = 7),
+        legend.text = element_text(size = 7),
         legend.spacing.x = unit(0.35, 'cm'),
-        axis.title = element_text(size = 6), 
-        axis.text=element_text(size = 6))
+        axis.title = element_text(size = 7), 
+        axis.text = element_text(size = 7))
 
 print(g_crec_vs_dsf)
 
@@ -378,9 +378,6 @@ print(g_acf_pacf)
 dev.off()
 
 setwd(oldwd)
-
-
-
 #Tabla de pruebas de raíz unitaria niveles=====================================
 
 pibr_df <- ur.df(data$log_pibryoy, type = "trend", selectlags = "AIC") %>% 
@@ -458,31 +455,38 @@ knitr::kable(tab_diff_df, booktabs = TRUE,
 
 #Tabla resultados del análisis de cointegración====================
 
-ca.jo(data %>% dplyr::select(pibr_yoy, cred_pib), 
+ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
       type = "trace",  
       K = 2, 
-      dumvar = dplyr::select(data, apert_comercial, tbp, inflacion, ied_pib),
+      dumvar = dplyr::select(data, log_pibusayoy, apert_comercial),
       ecdet = "const", 
       spec = "longrun") %>% 
   summary()
 
-#Tabla Test de Cointegración Engle-Granger==============================
+ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
+      type = "trace",  
+      K = 2, 
+      ecdet = "const", 
+      spec = "longrun") %>% 
+  summary()
+
+#Tabla Test de Cointegración del residuo de la regresión lineal==============================
+#Prueba DF
 mod_lm <- lm(log_pibryoy ~ cred_pib, data= data)
 summary(mod_lm)
 
 resid_modlm <- ur.df(residuals(mod_lm) , type = "none", selectlags = "AIC") %>% 
   summary()
 
+resid_modlm@cval
+
 unitrootTest(residuals(mod_lm), lags = 1, type = "nc")
 
 unitrootTable(trend = "nc", statistic = "t")
 qunitroot(0.99, length(residuals(mod_lm)), trend = "nc", statistic = "t")  
 
-
 tab_res_df <- tibble("Estadístico" = round(t(resid_modlm@teststat)[, 1], 2) , 
-                     `1pct` = -round(qunitroot(0.99, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2), 
-                     `5pct` = -round(qunitroot(0.95, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2), 
-                     `10pct` = -round(qunitroot(0.90, length(residuals(mod_lm)), trend = "nc", statistic = "t"), 2)) %>% 
+                     resid_modlm@cval %>% as_tibble()) %>% 
   mutate(`Parámetro` = c("tau_1")) %>% 
   relocate(`Parámetro`, .before = "Estadístico")
 
@@ -492,6 +496,32 @@ knitr::kable(tab_res_df, booktabs = TRUE,
              format = "latex") %>% 
   kable_styling(font_size = 8) %>% 
   column_spec(1, width = "10em") %>% 
-  add_header_above(c("", "", "Valores Críticos"  = 3)) %>% 
-  footnote(general = "Valores críticos corresponden a Mackinnon")
+  add_header_above(c("", "", "Valores Críticos"  = 3))
 
+#Correlograma
+
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_acf_residuo.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_acf_residuo <- tibble(fecha = data$fecha,
+                        residuos = residuals(mod_lm), 
+                        log_pibr = data$log_pibryoy, 
+                        dsf = data$cred_pib) %>%
+  dplyr::select(fecha, residuos, log_pibr, dsf) %>% 
+  `colnames<-`(c("fecha", "Residuos", "crecimiento económico", "dsf")) %>% 
+  acf_plot(alfa = 0.05) + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 7))
+
+print(g_acf_pacf)
+
+dev.off()
+
+setwd(oldwd)
