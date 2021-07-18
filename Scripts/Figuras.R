@@ -139,9 +139,9 @@ oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
 tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-g_pibryoy <- ggplot(data = data, aes(x = fecha, y = pibr_yoy)) + 
+g_pibryoy <- ggplot(data = data, aes(x = fecha, y = log_pibryoy)) + 
   geom_line() +
-  ylab(TeX("$log\\frac{PIBr_t}{PIBr_{t-4}$")) + 
+  ylab("Crecimiento interanual del PIB") + 
   theme_classic()
 
 print(g_pibryoy)
@@ -205,6 +205,24 @@ dev.off()
 setwd(oldwd)
 
 
+#Grafico crecimiento del PIB USA=========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_pibusa.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_pibusa <- ggplot(data = data, aes(x = fecha, y = log_pibusayoy)) + 
+  geom_line() +
+  ylab("Crecimiento interanual del PIB") + 
+  theme_classic()
+
+print(g_pibusa)
+
+dev.off()
+
+setwd(oldwd)
+
 #Grafico TBP===================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_tbp.tex')
@@ -218,6 +236,24 @@ g_tbp <- ggplot(data = data, aes(x = fecha, y = tbp)) +
   theme_classic()
 
 print(g_tbp)
+
+dev.off()
+
+setwd(oldwd)
+
+#Grafico MIF===================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_mif.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_mif <- ggplot(data = data, aes(x = fecha, y = mif)) + 
+  geom_line() +
+  ylab(TeX("$\\%$")) + 
+  theme_classic()
+
+print(g_mif)
 
 dev.off()
 
@@ -245,23 +281,21 @@ data %>% dplyr::select(tbp, apert_comercial, ied_pib) %>%
   cor()
 
 #Tabla estadísticas descriptivas======================
-vars <-  c("log_pibryoy", "cred_pib", "apert_comercial", "ied_pib", "inflacion", "tbp") 
+vars <-  c("log_pibryoy", "cred_pib", "log_pibusayoy", "ied_pib", "inflacion", "tbp") 
 vars_nombre <- c(paste0("Crecimiento económico", footnote_marker_alphabet(1, "latex")), 
                  paste0("Desarrollo del Sistema Financiero", footnote_marker_alphabet(2, "latex")), 
-                 paste0("Apertura Comercial", footnote_marker_alphabet(2, "latex")), 
+                 paste0("Crecimiento econ. (EUA)", footnote_marker_alphabet(1, "latex")), 
                  paste0("IED", footnote_marker_alphabet(2, "latex")),
                  "Inflación",
-                 paste0("TBP", footnote_marker_alphabet(3, "latex")))
+                 "MIF")
 vars_unidades <- c("Crecimiento", "En relación al PIB Nominal", 
-                 "En relación al PIB Nominal", "En relación al PIB Nominal", "Porcentaje")
+                 "Crecimiento", "En relación al PIB Nominal", "Porcentaje")
 
 variables_descripciones <- tibble(vars, vars_nombre, orden = 1:length(vars))
 
 data_long <- data %>% 
   dplyr::select(fecha, all_of(vars)) %>% 
   pivot_longer(-fecha, "Indicador", values_to = "valor")
-
-View(data)
 
 tab_descriptivos <- data_long %>%   
   group_by(Indicador) %>% 
@@ -339,15 +373,15 @@ data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>%
 
 
 cormat <- data %>% 
-  select(log_pibryoy, cred_pib, ied_pib, apert_comercial, tbp, inflacion) %>% 
+  select(log_pibryoy, cred_pib, ied_pib, log_pibusayoy, mif, inflacion) %>% 
   cor() %>% 
   round(2)
 
-colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP", "Inflación")
-row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Apert.Com", "TBP", "Inflación")
+colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Crec. EUA", "MIF", "Inflación")
+row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Crec. EUA", "MIF", "Inflación")
 
 knitr::kable(cormat, booktabs = TRUE, 
-             caption = "Matriz de correlación",
+             caption = "Matriz de correlaciones",
              label = "cormat",
              format = "latex") %>% 
   kable_styling(latex_options = c("striped", "scale_down"), full_width = T,
@@ -455,20 +489,40 @@ knitr::kable(tab_diff_df, booktabs = TRUE,
 
 #Tabla resultados del análisis de cointegración====================
 
-ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
-      type = "trace",  
-      K = 2, 
-      dumvar = dplyr::select(data, log_pibusayoy, apert_comercial),
+cajo_covars <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
+      type = "eigen",  
+      K = 5, 
+      dumvar = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion),
       ecdet = "const", 
       spec = "longrun") %>% 
   summary()
 
-ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
-      type = "trace",  
-      K = 2, 
+cajo_simple <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
+      type = "eigen",  
+      K = 5, 
       ecdet = "const", 
       spec = "longrun") %>% 
   summary()
+
+tabla_cajo1 <- tibble("Estadístico" = round(cajo_simple@teststat, 2), 
+                     round(cajo_simple@cval, 2) %>% as_tibble()) %>% 
+  bind_rows(tibble("Estadístico" = round(cajo_covars@teststat, 2), 
+            round(cajo_covars@cval, 2) %>% as_tibble())) %>% 
+  mutate(`Hipótesis` = rep(c("r <= 1", "r = 0"), 2)) %>% 
+  relocate(`Hipótesis`, .before = `Estadístico`)
+
+tabla_cajo2 <- tibble(`Hipótesis` = c("r <= 1", "r = 0"), 
+                      "Modelo 10" = round(cajo_simple@teststat, 2),
+                      "Modelo 11" = round(cajo_covars@teststat, 2),
+                      round(cajo_simple@cval, 2) %>% as_tibble())
+
+knitr::kable(tabla_cajo2, booktabs = TRUE, 
+             caption = "Rango de cointegración: Estadístico de auto-valor máximo" ,
+             label = "cajo",
+             format = "latex") %>% 
+  kable_styling(font_size = 8) %>% 
+  column_spec(1, width = "10em") %>% 
+  add_header_above(c("", "Estadístico" = 2, "Valores Críticos"  = 3))
 
 #Tabla Test de Cointegración del residuo de la regresión lineal==============================
 #Prueba DF
@@ -525,3 +579,243 @@ print(g_acf_pacf)
 dev.off()
 
 setwd(oldwd)
+
+
+
+#Modelo VAR===================================================
+mod <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+           type = "both",
+           lag.max = 12, ic = "AIC",
+           exogen = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion))
+
+summary(mod)
+
+#Análisis=======================================================
+roots(mod, modulus = T)
+
+##Evaluación del modelo
+
+### Autocorrelación serial
+
+residuals_mod <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod)) + 1):nrow(data)],
+                             res = scale(residuals(mod))) %>% as_tibble()
+
+residuals_mod_long <- residuals_mod %>%
+  pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
+
+acf(residuals(mod), plot = F)
+
+serial.test(mod, type = "PT.asymptotic")
+serial.test(mod, type = "BG", lags.bg = 16)
+serial.test(mod, type = "PT.adjusted")
+serial.test(mod, type = "ES")
+
+### Heterocedasticidad
+arch.test(mod, lags.multi = 5, multivariate.only = T)
+
+### Normalidad del residuo
+normality.test(mod, multivariate.only = T)
+
+knitr::kable(tabla_var_tests, booktabs = TRUE, 
+             caption = "Pruebas de diagnosis del VAR",
+             label = "modelo_var_pruebas",
+             format = "latex") %>% 
+  kable_styling(font_size = 10) 
+
+### Estabilidad
+stability(mod, type = "OLS-CUSUM") %>% plot()
+roots(mod, modulus = T)
+
+resz_mod <- residuals_mod_long %>% 
+  ggplot(aes(x = fecha, y = `residuo estandarizado`)) + 
+  geom_point_interactive(aes(tooltip = paste0("Fecha: ", fecha),
+                             data_id = fecha)) + 
+  geom_hline(yintercept = 2,linetype = "dashed") +
+  geom_hline(yintercept = -2,linetype = "dashed") +
+  facet_wrap(. ~ indicador) +
+  ggtitle(str_wrap("Residuos del Modelo VAR", 40)) +
+  theme_bw() %+replace% 
+  theme(panel.background = element_rect(fill = NA), legend.position = "none")
+
+girafe(ggobj = resz_mod,
+       width_svg = 10, height_svg = 4,
+       options = list(
+         opts_sizing(rescale = TRUE),
+         opts_hover_inv(css = "opacity:0.2;"),
+         opts_hover(css = "stroke-width:2;")
+       ))
+
+residuals_mod_long %>% 
+  ggplot(aes(x = `residuo estandarizado`)) + 
+  geom_density() + 
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("Gráficos de densidad para los residuos del Modelo VAR")
+
+#dev.off()
+residuals_mod_long %>% 
+  ggplot(aes(sample = `residuo estandarizado`)) + 
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  ggtitle("QQplots los residuos del Modelo VAR")
+
+#Granger causalidad
+causality(mod, cause = "cred_pib")
+causality(mod, cause = "log_pibryoy")
+
+#Tabla Coeficientes delo modelo VAR======================
+tab_var <- tibble(`Parámetros` = names(mod$varresult$log_pibryoy$coefficients), 
+                  log_pibryoy = round(mod$varresult$log_pibryoy$coefficients, 3),
+                  t1 = round(summary(mod)$varresult$log_pibryoy$coefficients[, "t value"], 2),
+                  pvalue1 = summary(mod)$varresult$log_pibryoy$coefficients[, "Pr(>|t|)"],
+                  stars1 = ifelse(pvalue1 <= 0.001, " ***", ifelse(pvalue1 <= 0.01, " **", 
+                                                                   ifelse(pvalue1 <= 0.05, " *", ifelse(pvalue1 <= 0.1, ".", "")))), 
+                  cred_pib = round(mod$varresult$cred_pib$coefficients, 3), 
+                  t2 = round(summary(mod)$varresult$cred_pib$coefficients[, "t value"], 2),
+                  pvalue2 = summary(mod)$varresult$cred_pib$coefficients[, "Pr(>|t|)"],
+                  stars2 = ifelse(pvalue2 <= 0.001, " ***", ifelse(pvalue2 <= 0.01, " **", 
+                                                                   ifelse(pvalue2 <= 0.05, " *", ifelse(pvalue2 <= 0.1, ".", ""))))) %>%  
+  mutate(log_pibryoy = paste0(paste0(paste0(paste0(log_pibryoy, " ("),t1),")"), stars1),
+         cred_pib = paste0(paste0(paste0(paste0(cred_pib, " ("),t2),")"), stars2)) %>% 
+  dplyr::select(`Parámetros`, log_pibryoy, cred_pib) %>% 
+  column_to_rownames(var = "Parámetros")
+
+knitr::kable(tab_var, booktabs = TRUE, 
+             caption = "Coeficientes estimados del modelo VAR(5)",
+             label = "modelo_var",
+             format = "latex") %>% 
+  kable_styling(font_size = 10) %>% 
+  column_spec(1, width = "8cm") %>% 
+  column_spec(2, width = "8cm") %>% 
+  column_spec(3, width = "8cm") %>% 
+  footnote(general = c("Códigos de significancia: 0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1", 
+                       "Estadístico t en paréntesis"))
+
+#Tabla de diagnostico modelo VAR=============
+ptm_test <- serial.test(mod, type = "PT.asymptotic")
+arch <- arch.test(mod, multivariate.only = T)
+jb <- normality.test(mod, multivariate.only = T)
+
+tabla_var_tests <- tibble(Prueba = c("Portmanteau", "ARCH", "Jarque-Bera"),
+                          `Estadístico` = c(round(ptm_test$serial$statistic, 2),
+                                            round(arch$arch.mul$statistic, 2), 
+                                            round(jb$jb.mul$JB$statistic, 2)),
+                          `Valor p` =  c(round(ptm_test$serial$p.value, 2), 
+                                         round(arch$arch.mul$p.value, 2), 
+                                         round(jb$jb.mul$JB$p.value, 2)))  
+
+#Grafico acf modelo var========
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_acf_var.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+t_acf_var <- tibble(acf(residuals(mod), plot = F)$acf %>% as_tibble())
+colnames(t_acf_var) = c("log.pibryoy", "log.pibryoy - cred.pib", "cred.pib", "cred.pib - log.pibryoy")
+
+ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
+
+g_acf_var <- t_acf_var %>%
+  dplyr::select(log.pibryoy, cred.pib) %>% 
+  mutate(rezago = 1:n()) %>%  
+  pivot_longer(-c(rezago), names_to = "variable", values_to = "valor") %>%
+  arrange(desc(variable)) %>% 
+  ggplot(aes(x = rezago,  y = valor)) +
+  geom_segment(mapping = aes(xend = rezago, yend = 0)) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = ic, linetype = 2, color = 'darkblue') +
+  geom_hline(yintercept = -ic, linetype = 2, color = 'darkblue') +
+  facet_grid(variable ~ .) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 8))
+
+
+print(g_acf_var)
+
+dev.off()
+
+setwd(oldwd)
+
+#Grafico ccf modelo var=====================================================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_ccf_var.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
+
+g_ccf_var <- tibble(ccf = ccf(residuals(mod)[, 1], residuals(mod)[, 2], plot = F)$acf, 
+                    rezago = -15:15) %>%  
+  ggplot(aes(x = rezago,  y = ccf)) +
+  geom_segment(mapping = aes(xend = rezago, yend = 0)) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = ic, linetype = 2, color = 'darkblue') +
+  geom_hline(yintercept = -ic, linetype = 2, color = 'darkblue') +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 8), 
+        axis.text=element_text(size = 8))
+
+print(g_ccf_var)
+
+dev.off()
+
+setwd(oldwd)
+
+residuals_mod <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod)) + 1):nrow(data)],
+                            res = scale(residuals(mod))) %>% as_tibble()
+#Grafico qqplot modelo var=====================================================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_qqplot_var.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+residuals_mod <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod)) + 1):nrow(data)],
+                            res = scale(residuals(mod))) %>% as_tibble()
+
+colnames(residuals_mod) <- c("fecha", "log.pibryoy", "cred.pib")
+
+residuals_mod_long <- residuals_mod %>%
+  pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
+
+g_qqplot_var <- residuals_mod_long %>% 
+  ggplot(aes(sample = `residuo estandarizado`)) + 
+  stat_qq(size = 0.7) +
+  stat_qq_line() +
+  facet_wrap(. ~ indicador) + 
+  theme_bw() + 
+  xlab("Cuartiles teóricos") +
+  ylab("Cuartiles observados")
+
+print(g_qqplot_var)
+
+dev.off()
+
+setwd(oldwd)
+
+
+#Tabla de diagnostico modelo VAR=============
+
+tab_raizes <- tibble(param = "módulo",
+                     m = t(round(roots(mod), 4))) 
+
+tab_raizes <- tab_raizes %>%  
+  column_to_rownames("param")
+
+knitr::kable(tab_raizes, booktabs = TRUE, 
+             caption = "Módulo de los valores propios de los coeficientes del Modelo VAR",
+             label = "estabilidad_var",
+             format = "latex") %>% 
+  kable_styling(font_size = 10)

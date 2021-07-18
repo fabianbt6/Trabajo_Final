@@ -216,8 +216,7 @@ summary(alrtest(z = jo_test, A = A , r = 2))
 #Modelo VAR 1===============================
 mod1 <- VAR(dplyr::select(data, log_pibryoy, cred_pib), 
             type = "both", 
-            lag.max = 12, ic = "AIC",
-            exogen = dplyr::select(data, d_2Q20))
+            lag.max = 12, ic = "AIC")
 
 summary(mod1)
 
@@ -463,22 +462,17 @@ VARselect(cbind(pibryoy_ts, credyoy_ts),
 mod3 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
             type = "both",
             lag.max = 12, ic = "AIC",
-            exogen = dplyr::select(data, log_pibusayoy, apert_comercial, d_2Q20))
+            exogen = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion))
 
 summary(mod3)
 
-roots(mod3, modulus = T)
+names(data)
 
-VARselect(cbind(pibryoy_ts, credyoy_ts), 
-          12, 
-          type = "none", 
-          exogen = d_2Q20_ts)
+roots(mod3, modulus = T)
 
 ##Evaluación del modelo básico
 
 ### Autocorrelación serial
-
-acf(residuals(mod3))
 
 residuals_mod3 <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod3)) + 1):nrow(data)],
                              res = scale(residuals(mod3))) %>% as_tibble()
@@ -553,7 +547,7 @@ lrtest(mod2, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en 
 
  
 #Modelo VAR 4===============================
-mod4 <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+mod4 <- VAR(dplyr::select(data, log_pibryoy, cred_pib, tbp),
             type = "both",
             lag.max = 12, ic = "AIC",
             exogen = dplyr::select(data, log_pibusayoy, apert_comercial, d_2Q20))
@@ -634,6 +628,7 @@ residuals_mod4_long %>%
 #Granger causalidad
 causality(mod4, cause = "cred_pib")
 causality(mod4, cause = "log_pibryoy")
+causality(mod4, cause = "tbp")
 
 plot(mif_a_cred_mod4)
 
@@ -757,4 +752,33 @@ irf_ggplot(pib_a_cred,
            "Respuesta del Cred a un impulso en el PIB",
            "% del PIB", 
            intervalo = T)
+
+
+#=============================
+
+modelos <- list(mod4) 
+
+cred_a_pib <- irf_comparativo(modelos, 
+                              nombres = paste("mod", c("4"), sep = ""), 
+                              impulse_var = "tbp", 
+                              resp_var = "cred_pib", 
+                              acumulado = T)
+
+#dev.off() Correr si ggplot no funciona
+irf_ggplot(cred_a_pib, 
+           "Respuesta del PIB a un impulso en el cred", 
+           "%",
+           intervalo = T)
+
+pib_a_cred <- irf_comparativo(modelos, 
+                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
+                              impulse_var = "log_pibryoy" , 
+                              resp_var = "cred_pib", 
+                              acumulado = F)
+
+irf_ggplot(pib_a_cred, 
+           "Respuesta del Cred a un impulso en el PIB",
+           "% del PIB", 
+           intervalo = T)
+
 
