@@ -754,31 +754,41 @@ irf_ggplot(pib_a_cred,
            intervalo = T)
 
 
-#=============================
+#VECM=======================
 
-modelos <- list(mod4) 
+vecm <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib),
+              type = "eigen",
+              K = 5,
+              dumvar = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion),
+              ecdet = "const", 
+              spec = "transitory") 
 
-cred_a_pib <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("4"), sep = ""), 
-                              impulse_var = "tbp", 
-                              resp_var = "cred_pib", 
-                              acumulado = T)
+vecm.r1 <- cajorls(vecm, r = 1)
 
-#dev.off() Correr si ggplot no funciona
-irf_ggplot(cred_a_pib, 
-           "Respuesta del PIB a un impulso en el cred", 
-           "%",
-           intervalo = T)
+vecm.irf_dsf <- irf(vec2var(vecm, 1), response = "cred_pib",
+                    n.ahead = 24 , boot = TRUE, cumulative = F)
 
-pib_a_cred <- irf_comparativo(modelos, 
-                              nombres = paste("mod", c("1", "2", "3"), sep = ""), 
-                              impulse_var = "log_pibryoy" , 
-                              resp_var = "cred_pib", 
-                              acumulado = F)
+plot(vecm.irf_dsf)
 
-irf_ggplot(pib_a_cred, 
-           "Respuesta del Cred a un impulso en el PIB",
-           "% del PIB", 
-           intervalo = T)
+vecm.irf_ce <- irf(vec2var(vecm, 1), response = "log_pibryoy",
+                    n.ahead = 24 , boot = TRUE)
+
+plot(vecm.irf_ce)
 
 
+#lue.vecm <- summary(cajolst(data %>% dplyr::select(log_pibryoy, cred_pib), season = 4)) #Para evaluar cambios estructurales en las series
+
+SR <- matrix (NA, nrow = 3 , ncol = 3) 
+SR[1, 2] <- 0
+SR
+LR <- matrix (NA, nrow = 2, ncol = 2) 
+LR[1:2, 2] <- 0
+LR
+
+svec <- SVEC(vecm, LR = LR, SR = SR ,r = 1, lrtest = FALSE,
+             boot = TRUE, runs = 100)
+svec
+svec $SR / svec $SRse svec
+
+svec . i r f
+pl o t ( svec . i r f )

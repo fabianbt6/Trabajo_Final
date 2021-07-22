@@ -67,9 +67,12 @@ data <- data_original %>%
          tir = tbp - inflacion,
          cred_pib = cred / pibn_rollsum_4q, 
          apert_comercial = (exp + imp) / pibn, 
-         cred_yoy = crecimiento_interanual_pbs(fecha, cred_pib)) %>% 
+         cred_yoy = crecimiento_interanual_pbs(fecha, cred_pib), 
+         cpib.cri = log_pibryoy, 
+         des.sf = cred_pib, 
+         cpib.usa = log_pibusayoy, 
+         ied.pib = ied_pib) %>% 
   na.omit()
-
 
 # data %>% 
 #   dplyr::select(fecha, mif, mifl1) %>% 

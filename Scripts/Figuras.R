@@ -1,6 +1,8 @@
 
 rm(list = ls())
 
+irf()
+
 #libs======================
 library(tidyverse)
 library(readxl)
@@ -131,6 +133,85 @@ acf_plot <- function(mydata, alfa) {
   return(g)
   
 }
+
+irf_comparativo <- function(modelos, nombres, impulse_var, resp_var, acumulado = F, nper = 12) {
+  
+  tibble(modelos = modelos) %>% 
+    mutate(modelo = nombres,
+           irf_obj = map(modelos, ~ irf(x = ., 
+                                        impulse = impulse_var, 
+                                        response = resp_var, 
+                                        cumulative = acumulado)), 
+           irf = map(irf_obj, "irf"), 
+           l_inf = map(irf_obj, "Lower"), 
+           l_sup = map(irf_obj, "Upper")) %>% 
+    dplyr::select(-modelos, -irf_obj) %>% 
+    unnest(-modelo) %>% 
+    unnest(-modelo) %>% 
+    mutate(periodo = rep(0:(nper - 2), length(modelos)), 
+           irf = irf[,1], 
+           l_inf = l_inf[,1], 
+           l_sup = l_sup[,1])
+}
+irf_ggplot <- function(data, tit, lab, intervalo = T, seq_rng = 12, step = 2) {
+  
+  line_size <- 0.65
+  
+  graf <- data %>%
+    ggplot(aes(x = periodo, y = irf)) + 
+    geom_line(aes(colour = modelo), size = line_size) + 
+    scale_x_continuous(breaks = seq(0, seq_rng, by = step)) +
+    geom_hline(yintercept = 0) +  
+    ggtitle(tit) + 
+    ylab(lab) +
+    theme_bw() %+replace% 
+    theme(legend.position = "none", 
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
+  
+  if(intervalo == T) {
+    graf <- graf + 
+      geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", 
+                linetype = "dashed",
+                size = line_size) + 
+      geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", 
+                linetype = "dashed", 
+                size = line_size) 
+  } 
+  
+  return(graf)
+  
+}  
+irf_ggplot_comparativo <- function(data, tit, lab, intervalo = T) {
+  
+  line_size <- 0.65
+  
+  graf <- data %>%
+    ggplot(aes(x = periodo, y = irf)) + 
+    geom_line(aes(colour = modelo), size = line_size) + 
+    scale_x_continuous(breaks = seq(0, 12, by = 2)) +
+    facet_wrap(. ~ modelo) +
+    geom_hline(yintercept = 0) +  
+    ggtitle(tit) + 
+    ylab(lab) +
+    theme_bw() %+replace% 
+    theme(legend.position = "none", 
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
+  
+  if(intervalo == T) {
+    graf <- graf + 
+      geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", 
+                linetype = "dashed",
+                size = line_size) + 
+      geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", 
+                linetype = "dashed", 
+                size = line_size) 
+  } 
+  
+  return(graf)
+  
+}  
 
 #Grafico crecimiento del PIBr=========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
@@ -395,7 +476,7 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_acf_pacf.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 4, height = 3)
+tikz(tf, standAlone = FALSE, width = 4, height = 4)
 
 g_acf_pacf <- data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
   `colnames<-`(c("fecha", "Crecimiento Económico", "Desarrollo del S.F.")) %>% 
@@ -582,11 +663,13 @@ setwd(oldwd)
 
 
 
+
+
 #Modelo VAR===================================================
-mod <- VAR(dplyr::select(data, log_pibryoy, cred_pib),
+mod <- VAR(dplyr::select(data, cpib.cri, des.sf),
            type = "both",
            lag.max = 12, ic = "AIC",
-           exogen = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion))
+           exogen = dplyr::select(data, cpib.usa, ied.pib, mif, inflacion))
 
 summary(mod)
 
@@ -666,20 +749,20 @@ causality(mod, cause = "cred_pib")
 causality(mod, cause = "log_pibryoy")
 
 #Tabla Coeficientes delo modelo VAR======================
-tab_var <- tibble(`Parámetros` = names(mod$varresult$log_pibryoy$coefficients), 
-                  log_pibryoy = round(mod$varresult$log_pibryoy$coefficients, 3),
-                  t1 = round(summary(mod)$varresult$log_pibryoy$coefficients[, "t value"], 2),
-                  pvalue1 = summary(mod)$varresult$log_pibryoy$coefficients[, "Pr(>|t|)"],
+tab_var <- tibble(`Parámetros` = names(mod$varresult$cpib.cri$coefficients), 
+                  cpib.cri = round(mod$varresult$cpib.cri$coefficients, 3),
+                  t1 = round(summary(mod)$varresult$cpib.cri$coefficients[, "t value"], 2),
+                  pvalue1 = summary(mod)$varresult$cpib.cri$coefficients[, "Pr(>|t|)"],
                   stars1 = ifelse(pvalue1 <= 0.001, " ***", ifelse(pvalue1 <= 0.01, " **", 
                                                                    ifelse(pvalue1 <= 0.05, " *", ifelse(pvalue1 <= 0.1, ".", "")))), 
-                  cred_pib = round(mod$varresult$cred_pib$coefficients, 3), 
-                  t2 = round(summary(mod)$varresult$cred_pib$coefficients[, "t value"], 2),
-                  pvalue2 = summary(mod)$varresult$cred_pib$coefficients[, "Pr(>|t|)"],
+                  des.sf = round(mod$varresult$des.sf$coefficients, 3), 
+                  t2 = round(summary(mod)$varresult$des.sf$coefficients[, "t value"], 2),
+                  pvalue2 = summary(mod)$varresult$des.sf$coefficients[, "Pr(>|t|)"],
                   stars2 = ifelse(pvalue2 <= 0.001, " ***", ifelse(pvalue2 <= 0.01, " **", 
                                                                    ifelse(pvalue2 <= 0.05, " *", ifelse(pvalue2 <= 0.1, ".", ""))))) %>%  
-  mutate(log_pibryoy = paste0(paste0(paste0(paste0(log_pibryoy, " ("),t1),")"), stars1),
-         cred_pib = paste0(paste0(paste0(paste0(cred_pib, " ("),t2),")"), stars2)) %>% 
-  dplyr::select(`Parámetros`, log_pibryoy, cred_pib) %>% 
+  mutate(cpib.cri = paste0(paste0(paste0(paste0(cpib.cri, " ("),t1),")"), stars1),
+         des.sf = paste0(paste0(paste0(paste0(des.sf, " ("),t2),")"), stars2)) %>% 
+  dplyr::select(`Parámetros`, cpib.cri, des.sf) %>% 
   column_to_rownames(var = "Parámetros")
 
 knitr::kable(tab_var, booktabs = TRUE, 
@@ -687,9 +770,9 @@ knitr::kable(tab_var, booktabs = TRUE,
              label = "modelo_var",
              format = "latex") %>% 
   kable_styling(font_size = 10) %>% 
-  column_spec(1, width = "8cm") %>% 
-  column_spec(2, width = "8cm") %>% 
-  column_spec(3, width = "8cm") %>% 
+  column_spec(1, width = "3cm") %>% 
+  column_spec(2, width = "3cm") %>% 
+  column_spec(3, width = "3cm") %>% 
   footnote(general = c("Códigos de significancia: 0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1", 
                        "Estadístico t en paréntesis"))
 
@@ -714,12 +797,12 @@ setwd(td)
 tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
 t_acf_var <- tibble(acf(residuals(mod), plot = F)$acf %>% as_tibble())
-colnames(t_acf_var) = c("log.pibryoy", "log.pibryoy - cred.pib", "cred.pib", "cred.pib - log.pibryoy")
+colnames(t_acf_var) = c("cpib.cri", "cpib.cri - cred.pib", "des.sf", "des.sf - cpib.cri")
 
 ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
 
 g_acf_var <- t_acf_var %>%
-  dplyr::select(log.pibryoy, cred.pib) %>% 
+  dplyr::select(cpib.cri, des.sf) %>% 
   mutate(rezago = 1:n()) %>%  
   pivot_longer(-c(rezago), names_to = "variable", values_to = "valor") %>%
   arrange(desc(variable)) %>% 
@@ -736,7 +819,6 @@ g_acf_var <- t_acf_var %>%
         axis.title = element_text(size = 6), 
         axis.text=element_text(size = 6), 
         strip.text.y = element_text(size = 8))
-
 
 print(g_acf_var)
 
@@ -785,8 +867,6 @@ tikz(tf, standAlone = FALSE, width = 4, height = 3)
 residuals_mod <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod)) + 1):nrow(data)],
                             res = scale(residuals(mod))) %>% as_tibble()
 
-colnames(residuals_mod) <- c("fecha", "log.pibryoy", "cred.pib")
-
 residuals_mod_long <- residuals_mod %>%
   pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
 
@@ -797,7 +877,10 @@ g_qqplot_var <- residuals_mod_long %>%
   facet_wrap(. ~ indicador) + 
   theme_bw() + 
   xlab("Cuartiles teóricos") +
-  ylab("Cuartiles observados")
+  ylab("Cuartiles observados") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8), 
+        axis.text=element_text(size = 8))
 
 print(g_qqplot_var)
 
@@ -805,17 +888,282 @@ dev.off()
 
 setwd(oldwd)
 
+#Tabla estabilidad VAR=============
 
-#Tabla de diagnostico modelo VAR=============
+tab_raizes <- tibble(param = 'Valores propios',
+                     val = round(roots(mod), 2)) %>% 
+  mutate(cons = 1:n())
 
-tab_raizes <- tibble(param = "módulo",
-                     m = t(round(roots(mod), 4))) 
 
-tab_raizes <- tab_raizes %>%  
+tab_raizes <- tab_raizes %>% pivot_wider(param, cons, values_from = val) %>%   
   column_to_rownames("param")
 
 knitr::kable(tab_raizes, booktabs = TRUE, 
-             caption = "Módulo de los valores propios de los coeficientes del Modelo VAR",
+             caption = "Módulo de los valores propios de los coeficientes del Modelo VAR (5)",
              label = "estabilidad_var",
              format = "latex") %>% 
   kable_styling(font_size = 10)
+
+#Granger causalidad
+granger_cred <- causality(mod, cause = "cred_pib")
+granger_pib <- causality(mod, cause = "log_pibryoy")
+
+tabla_caus <- tibble(Prueba  = c("D.S.F granger-causa C.E.", 
+                                  "C.E. granger-causa D.S.F", 
+                                  "Wald"),
+                     `Estadístico` = c(round(granger_cred$Granger$statistic[1, ], 3), 
+                                       round(granger_pib$Granger$statistic[1, ], 3),
+                                       round(granger_cred$Instant$statistic[1, ], 3)),
+                     `Valor p` = c(round(granger_cred$Granger$p.value[1, ], 3), 
+                                   round(granger_pib$Granger$p.value[1, ], 3),
+                                   round(granger_cred$Instant$p.value[1, ], 3))) 
+
+
+knitr::kable(tabla_caus, booktabs = TRUE, 
+             caption = "Pruebas de Causalidad",
+             label = "var_causalidad",
+             format = "latex") %>% 
+  footnote(general = c("C.E. = Crecimiento económico", 
+                     "D.S.F. = Desarrollo del Sistema Financiero"))
+
+                                       
+                     
+
+
+
+#Gráfico impulso-respuesta dsf_crec========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_irf_dsf.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 6, height = 3)
+
+dsf_crec_simple <- irf_comparativo(list(mod), "mod1",
+                                   impulse_var = "cpib.cri",
+                                   resp_var = "des.sf")
+
+dsf_crec_simple$tipo = "Efecto simple"
+
+dsf_crec_acum <- irf_comparativo(list(mod), "mod1",
+                                 impulse_var = "cpib.cri",
+                                 resp_var = "des.sf",
+                                 acumulado = T)
+
+View(dsf_crec_acum)
+dsf_crec_acum$tipo <- "Efecto acumulado"
+
+dsf_crec <- bind_rows(dsf_crec_simple, dsf_crec_acum)
+
+g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "Des.SF") + 
+  theme_bw() +
+  facet_wrap(. ~ tipo, scales = "free_y") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6.5), 
+        axis.text=element_text(size = 6.5),
+        strip.text.y = element_text(size = 7),
+        legend.position = "none")
+
+print(g_irf_dsf)
+
+dev.off()
+
+setwd(oldwd)
+
+#Gráfico impulso-respuesta crec_dsf========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_irf_crec.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 6, height = 3)
+
+crec_dsf_simple <- irf_comparativo(list(mod), "mod1",
+                                   impulse_var = "des.sf",
+                                   resp_var = "cpib.cri")
+
+crec_dsf_simple$tipo <- "Efecto simple"
+
+crec_dsf_acum <- irf_comparativo(list(mod), "mod1",
+                                 impulse_var = "des.sf",
+                                 resp_var = "cpib.cri",
+                                 acumulado = T)
+
+
+crec_dsf_acum$tipo <- "Efecto acumulado"
+
+crec_dsf <- bind_rows(crec_dsf_simple, crec_dsf_acum)
+
+g_irf_crec <- irf_ggplot(crec_dsf, tit = "", lab = "crec. econ.") + 
+  theme_bw() +
+  facet_wrap(. ~ tipo, scales = "free_y") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6.5), 
+        axis.text=element_text(size = 6.5),
+        strip.text.y = element_text(size = 7),
+        legend.position = "none")
+
+print(g_irf_crec)
+
+dev.off()
+
+setwd(oldwd)
+
+#Modelo VECM===================================================
+vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
+              type = "eigen",
+              K = 5,
+              dumvar = dplyr::select(data, cpib.usa, ied.pib, mif, inflacion),
+              ecdet = "const",
+              spec = "transitory") 
+
+vecm.r1 <- cajorls(vecm, r = 1)
+
+summary(vecm.r1$rlm)
+
+
+vecm.irf_dsf <- irf(vec2var(vecm, 1), 
+                    response = "des.sf", 
+                    impulse =  "cpib.cri",
+                    n.ahead = 36 , boot = TRUE, cumulative = T)
+
+plot(vecm.irf_dsf)
+
+vecm.irf_ce <- irf(vec2var(vecm, 1), 
+                   response = "cpib.cri",
+                   impulse = "des.sf",
+                   n.ahead = 36 , boot = TRUE, cumulative = T)
+
+plot(vecm.irf_ce)
+
+#Tabla Coeficientes delo modelo VECM======================
+
+
+
+
+tab_var <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients), 
+                  cpib.cri = round(vecm.r1$rlm$coefficients[, 1], 3),
+                  t1 = round(summary(mod)$varresult$cpib.cri$coefficients[, "t value"], 2),
+                  pvalue1 = summary(mod)$varresult$cpib.cri$coefficients[, "Pr(>|t|)"],
+                  stars1 = ifelse(pvalue1 <= 0.001, " ***", ifelse(pvalue1 <= 0.01, " **", 
+                                                                   ifelse(pvalue1 <= 0.05, " *", ifelse(pvalue1 <= 0.1, ".", "")))), 
+                  des.sf = round(vecm.r1$rlm$coefficients[, 2], 3), 
+                  t2 = round(summary(mod)$varresult$des.sf$coefficients[, "t value"], 2),
+                  pvalue2 = summary(mod)$varresult$des.sf$coefficients[, "Pr(>|t|)"],
+                  stars2 = ifelse(pvalue2 <= 0.001, " ***", ifelse(pvalue2 <= 0.01, " **", 
+                                                                   ifelse(pvalue2 <= 0.05, " *", ifelse(pvalue2 <= 0.1, ".", ""))))) %>%  
+  mutate(cpib.cri = paste0(paste0(paste0(paste0(cpib.cri, " ("),t1),")"), stars1),
+         des.sf = paste0(paste0(paste0(paste0(des.sf, " ("),t2),")"), stars2)) %>% 
+  dplyr::select(`Parámetros`, cpib.cri, des.sf) %>% 
+  column_to_rownames(var = "Parámetros")
+
+
+
+knitr::kable(tab_var, booktabs = TRUE, 
+             caption = "Coeficientes estimados del modelo VAR(5)",
+             label = "modelo_var",
+             format = "latex") %>% 
+  kable_styling(font_size = 10) %>% 
+  column_spec(1, width = "3cm") %>% 
+  column_spec(2, width = "3cm") %>% 
+  column_spec(3, width = "3cm") %>% 
+  footnote(general = c("Códigos de significancia: 0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1", 
+                       "Estadístico t en paréntesis"))
+
+
+
+#Gráfico impulso-respuesta dsf_crec========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_irf_dsf.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 6, height = 3)
+
+dsf_crec_simple <- irf_comparativo(list(mod), "mod1",
+                                   impulse_var = "cpib.cri",
+                                   resp_var = "des.sf")
+
+dsf_crec_simple$tipo = "Efecto simple"
+
+dsf_crec_acum <- irf_comparativo(list(mod), "mod1",
+                                 impulse_var = "cpib.cri",
+                                 resp_var = "des.sf",
+                                 acumulado = T)
+
+View(dsf_crec_acum)
+dsf_crec_acum$tipo <- "Efecto acumulado"
+
+dsf_crec <- bind_rows(dsf_crec_simple, dsf_crec_acum)
+
+g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "Des.SF") + 
+  theme_bw() +
+  facet_wrap(. ~ tipo, scales = "free_y") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6.5), 
+        axis.text=element_text(size = 6.5),
+        strip.text.y = element_text(size = 7),
+        legend.position = "none")
+
+print(g_irf_dsf)
+
+dev.off()
+
+setwd(oldwd)
+
+#Gráfico impulso-respuesta crec_dsf========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_vecm_irf_crec.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 6, height = 3)
+
+irf_vecm_crec_simple <- vars::irf(vec2var(vecm, 1),
+                           impulse = "des.sf", 
+                           response = "cpib.cri",  
+                           n.ahead = 36, 
+                           cumulative = F)
+
+vecm_crec_dsf_simple <- data.frame(irf = irf_vecm_crec_simple$irf %>% data.frame(),
+                                   l_inf = irf_vecm_crec_simple$Lower %>% data.frame(),
+                                   l_sup = irf_vecm_crec_simple$Upper %>% data.frame()) %>% 
+  mutate(periodo = 0:(n() - 1),  
+         tipo = "Efecto simple", 
+         modelo = "mod") %>% as_tibble()
+  
+names(vecm_crec_dsf_simple) <- c("irf", "l_inf", "l_sup", "periodo", "tipo", "modelo")
+
+irf_vecm_crec_acum <- vars::irf(vec2var(vecm, 1),
+                                impulse = "des.sf",
+                                response = "cpib.cri",
+                                n.ahead = 36, 
+                                cumulative = T)
+
+vecm_crec_dsf_acum <- data.frame(irf = irf_vecm_crec_acum$irf %>% data.frame(),
+                                 l_inf = irf_vecm_crec_acum$Lower %>% data.frame(),
+                                 l_sup = irf_vecm_crec_acum$Upper %>% data.frame()) %>% 
+  mutate(periodo = 0:(n() - 1),  
+         tipo = "Efecto acumulado", 
+         modelo = "mod") %>% as_tibble()
+
+names(vecm_crec_dsf_acum) <- c("irf", "l_inf", "l_sup", "periodo", "tipo", "modelo")
+
+vecm_crec_dsf <- bind_rows(vecm_crec_dsf_simple, vecm_crec_dsf_acum)
+
+g_vecm_irf_crec <- irf_ggplot(vecm_crec_dsf, tit = "", lab = "crec. econ.", seq_rng = 36, step = 4) + 
+  theme_bw() +
+  facet_wrap(. ~ tipo, scales = "free_y") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(size = 6.5), 
+        axis.text=element_text(size = 6.5),
+        strip.text.y = element_text(size = 7),
+        legend.position = "none")
+
+print(g_irf_crec)
+
+dev.off()
+
+setwd(oldwd)
+
+
