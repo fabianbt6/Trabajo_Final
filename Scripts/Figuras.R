@@ -1,8 +1,6 @@
 
 rm(list = ls())
 
-irf()
-
 #libs======================
 library(tidyverse)
 library(readxl)
@@ -153,14 +151,14 @@ irf_comparativo <- function(modelos, nombres, impulse_var, resp_var, acumulado =
            l_inf = l_inf[,1], 
            l_sup = l_sup[,1])
 }
-irf_ggplot <- function(data, tit, lab, intervalo = T, seq_rng = 12, step = 2) {
+irf_ggplot <- function(data, tit, lab, intervalo = T, nmax = 12, step = 2) {
   
   line_size <- 0.65
   
   graf <- data %>%
     ggplot(aes(x = periodo, y = irf)) + 
     geom_line(aes(colour = modelo), size = line_size) + 
-    scale_x_continuous(breaks = seq(0, seq_rng, by = step)) +
+    scale_x_continuous(breaks = seq(0, nmax, by = step)) +
     geom_hline(yintercept = 0) +  
     ggtitle(tit) + 
     ylab(lab) +
@@ -476,7 +474,7 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_acf_pacf.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 4, height = 4)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
 g_acf_pacf <- data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>% 
   `colnames<-`(c("fecha", "Crecimiento Económico", "Desarrollo del S.F.")) %>% 
@@ -936,32 +934,18 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_irf_dsf.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 6, height = 3)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-dsf_crec_simple <- irf_comparativo(list(mod), "mod1",
-                                   impulse_var = "cpib.cri",
-                                   resp_var = "des.sf")
+dsf_crec <- irf_comparativo(list(mod), "mod1", 
+                            impulse_var = "cpib.cri", 
+                            resp_var = "des.sf")
 
-dsf_crec_simple$tipo = "Efecto simple"
-
-dsf_crec_acum <- irf_comparativo(list(mod), "mod1",
-                                 impulse_var = "cpib.cri",
-                                 resp_var = "des.sf",
-                                 acumulado = T)
-
-View(dsf_crec_acum)
-dsf_crec_acum$tipo <- "Efecto acumulado"
-
-dsf_crec <- bind_rows(dsf_crec_simple, dsf_crec_acum)
-
-g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "Des.SF") + 
+g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "crecimiento económico") + 
   theme_bw() +
-  facet_wrap(. ~ tipo, scales = "free_y") +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 6.5), 
-        axis.text=element_text(size = 6.5),
-        strip.text.y = element_text(size = 7),
+        axis.title = element_text(size = 8), 
+        axis.text=element_text(size = 8), 
         legend.position = "none")
 
 print(g_irf_dsf)
@@ -975,32 +959,21 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_irf_crec.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 6, height = 3)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
 crec_dsf_simple <- irf_comparativo(list(mod), "mod1",
-                                   impulse_var = "des.sf",
-                                   resp_var = "cpib.cri")
-
-crec_dsf_simple$tipo <- "Efecto simple"
-
-crec_dsf_acum <- irf_comparativo(list(mod), "mod1",
-                                 impulse_var = "des.sf",
-                                 resp_var = "cpib.cri",
-                                 acumulado = T)
+                                   impulse_var = "log_pibryoy",
+                                   resp_var = "cred_pib",
+                                   acumulado = F)
 
 
-crec_dsf_acum$tipo <- "Efecto acumulado"
-
-crec_dsf <- bind_rows(crec_dsf_simple, crec_dsf_acum)
-
-g_irf_crec <- irf_ggplot(crec_dsf, tit = "", lab = "crec. econ.") + 
-  theme_bw() +
-  facet_wrap(. ~ tipo, scales = "free_y") +
+g_irf_crec <- irf_ggplot(crec_dsf, tit = "", lab = "créditos (en términos del PIB)") + 
+  theme_bw() + 
+  facet_wrap(tipo ~ ., scales = "free_y") +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 6.5), 
-        axis.text=element_text(size = 6.5),
-        strip.text.y = element_text(size = 7),
+        axis.title = element_text(size = 8), 
+        axis.text=element_text(size = 8), 
         legend.position = "none")
 
 print(g_irf_crec)
@@ -1008,6 +981,10 @@ print(g_irf_crec)
 dev.off()
 
 setwd(oldwd)
+
+
+vecm.r1$rlm$effects$
+
 
 #Modelo VECM===================================================
 vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
@@ -1021,12 +998,6 @@ vecm.r1 <- cajorls(vecm, r = 1)
 
 summary(vecm.r1$rlm)
 
-
-vecm.irf_dsf <- irf(vec2var(vecm, 1), 
-                    response = "des.sf", 
-                    impulse =  "cpib.cri",
-                    n.ahead = 36 , boot = TRUE, cumulative = T)
-
 plot(vecm.irf_dsf)
 
 vecm.irf_ce <- irf(vec2var(vecm, 1), 
@@ -1038,8 +1009,11 @@ plot(vecm.irf_ce)
 
 #Tabla Coeficientes delo modelo VECM======================
 
+str(vec2var(vecm))
 
+vecm.r1$rlm$assign
 
+summary(vecm.r1$rlm)
 
 tab_var <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients), 
                   cpib.cri = round(vecm.r1$rlm$coefficients[, 1], 3),
@@ -1072,98 +1046,123 @@ knitr::kable(tab_var, booktabs = TRUE,
 
 
 
-#Gráfico impulso-respuesta dsf_crec========================
+#Gráfico VECM impulso-respuesta dsf_crec========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
-tf <- file.path(td,'g_irf_dsf.tex')
+tf <- file.path(td,'g_irf_dsf_vecm.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
 tikz(tf, standAlone = FALSE, width = 6, height = 3)
 
-dsf_crec_simple <- irf_comparativo(list(mod), "mod1",
-                                   impulse_var = "cpib.cri",
-                                   resp_var = "des.sf")
+irf1 <- irf(vec2var(vecm),
+            impulse = "des.sf",
+            response = "cpib.cri",
+            n.ahead = 36,
+            cumulative = F)  
 
-dsf_crec_simple$tipo = "Efecto simple"
+irf2 <- irf(vec2var(vecm),
+            impulse = "des.sf",
+            response = "cpib.cri",
+            n.ahead = 36,
+            cumulative = T)  
 
-dsf_crec_acum <- irf_comparativo(list(mod), "mod1",
-                                 impulse_var = "cpib.cri",
-                                 resp_var = "des.sf",
-                                 acumulado = T)
+vecm_dsf_crec_simple <- tibble(irf = irf1$irf %>% unlist(), 
+                               l_inf = irf1$Lower %>% unlist(), 
+                               l_sup = irf1$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto simple", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
 
-View(dsf_crec_acum)
-dsf_crec_acum$tipo <- "Efecto acumulado"
+vecm_dsf_crec_acum <- tibble(irf = irf2$irf %>% unlist(), 
+                             l_inf = irf2$Lower %>% unlist(), 
+                             l_sup = irf2$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto acumulado", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
 
-dsf_crec <- bind_rows(dsf_crec_simple, dsf_crec_acum)
+vecm_dsf_crec <- bind_rows(vecm_dsf_crec_simple, vecm_dsf_crec_acum)
 
-g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "Des.SF") + 
-  theme_bw() +
-  facet_wrap(. ~ tipo, scales = "free_y") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 6.5), 
-        axis.text=element_text(size = 6.5),
-        strip.text.y = element_text(size = 7),
-        legend.position = "none")
-
-print(g_irf_dsf)
+g_irf_dsf_vecm <- vecm_dsf_crec %>% 
+  ggplot(aes(x = periodo, y = irf)) +
+  geom_line(size = 0.65, colour = "darkblue") +
+  facet_wrap(tipo ~ ., scales = "free_y") +
+  scale_x_continuous(breaks = seq(0, 36, by = 4)) +
+  geom_hline(yintercept = 0) +  
+  geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
+            size = 0.65) + 
+  geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", linetype = "dashed", 
+            size = 0.65) +
+  ylab("Crec. econ.") +
+  theme_bw() %+replace%
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 7))
+        
+print(g_irf_dsf_vecm)
 
 dev.off()
 
 setwd(oldwd)
 
-#Gráfico impulso-respuesta crec_dsf========================
+#Gráfico VECM impulso-respuesta crec_dsf========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
-tf <- file.path(td,'g_vecm_irf_crec.tex')
+tf <- file.path(td,'g_irf_crec_vecm.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
 tikz(tf, standAlone = FALSE, width = 6, height = 3)
 
-irf_vecm_crec_simple <- vars::irf(vec2var(vecm, 1),
-                           impulse = "des.sf", 
-                           response = "cpib.cri",  
-                           n.ahead = 36, 
-                           cumulative = F)
+irf1 <- irf(vec2var(vecm),
+            impulse = "cpib.cri",
+            response = "des.sf",
+            n.ahead = 36,
+            cumulative = F)  
 
-vecm_crec_dsf_simple <- data.frame(irf = irf_vecm_crec_simple$irf %>% data.frame(),
-                                   l_inf = irf_vecm_crec_simple$Lower %>% data.frame(),
-                                   l_sup = irf_vecm_crec_simple$Upper %>% data.frame()) %>% 
-  mutate(periodo = 0:(n() - 1),  
-         tipo = "Efecto simple", 
-         modelo = "mod") %>% as_tibble()
-  
-names(vecm_crec_dsf_simple) <- c("irf", "l_inf", "l_sup", "periodo", "tipo", "modelo")
+irf2 <- irf(vec2var(vecm),
+            impulse = "cpib.cri",
+            response = "des.sf",
+            n.ahead = 36,
+            cumulative = T)  
 
-irf_vecm_crec_acum <- vars::irf(vec2var(vecm, 1),
-                                impulse = "des.sf",
-                                response = "cpib.cri",
-                                n.ahead = 36, 
-                                cumulative = T)
+vecm_crec_dsf_simple <- tibble(irf = irf1$irf %>% unlist(), 
+                               l_inf = irf1$Lower %>% unlist(), 
+                               l_sup = irf1$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto simple", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
 
-vecm_crec_dsf_acum <- data.frame(irf = irf_vecm_crec_acum$irf %>% data.frame(),
-                                 l_inf = irf_vecm_crec_acum$Lower %>% data.frame(),
-                                 l_sup = irf_vecm_crec_acum$Upper %>% data.frame()) %>% 
-  mutate(periodo = 0:(n() - 1),  
-         tipo = "Efecto acumulado", 
-         modelo = "mod") %>% as_tibble()
-
-names(vecm_crec_dsf_acum) <- c("irf", "l_inf", "l_sup", "periodo", "tipo", "modelo")
+vecm_crec_dsf_acum <- tibble(irf = irf2$irf %>% unlist(), 
+                             l_inf = irf2$Lower %>% unlist(), 
+                             l_sup = irf2$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto acumulado", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
 
 vecm_crec_dsf <- bind_rows(vecm_crec_dsf_simple, vecm_crec_dsf_acum)
 
-g_vecm_irf_crec <- irf_ggplot(vecm_crec_dsf, tit = "", lab = "crec. econ.", seq_rng = 36, step = 4) + 
-  theme_bw() +
-  facet_wrap(. ~ tipo, scales = "free_y") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 6.5), 
-        axis.text=element_text(size = 6.5),
-        strip.text.y = element_text(size = 7),
-        legend.position = "none")
+g_irf_crec_vecm <- vecm_crec_dsf %>% 
+  ggplot(aes(x = periodo, y = irf)) +
+  geom_line(size = 0.65, colour = "darkblue") +
+  facet_wrap(tipo ~ ., scales = "free_y") +
+  scale_x_continuous(breaks = seq(0, 36, by = 4)) +
+  geom_hline(yintercept = 0) +  
+  geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
+            size = 0.65) + 
+  geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", linetype = "dashed", 
+            size = 0.65) +
+  ylab("Desarrollo del s.f.") +
+  theme_bw() %+replace%
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+        strip.text.y = element_text(size = 7))
 
-print(g_irf_crec)
+print(g_irf_crec_vecm)
 
 dev.off()
 
 setwd(oldwd)
-
 
