@@ -108,6 +108,13 @@ data$d_1Q20 <- ifelse(data$fecha == "2020-03-01", 1, 0)
 data$d_2Q20 <- ifelse(data$fecha == "2020-06-01", 1, 0)
 data$d_3Q20 <- ifelse(data$fecha == "2020-09-01", 1, 0)
 data$d_4Q20 <- ifelse(data$fecha == "2020-12-01", 1, 0)
+
+#Dummies de estacionalidad
+
+data$est.d1 <- ifelse(quarter(data$fecha) == 1, 1, 0)
+data$est.d2 <- ifelse(quarter(data$fecha) == 2, 1, 0)
+data$est.d3 <- ifelse(quarter(data$fecha) == 3, 1, 0)
+data$est.d4 <- ifelse(quarter(data$fecha) == 4, 1, 0)
   
 data$apertcomercial75 <- ifelse(data$apert_comercial > 75, 1, 0)
 data$inflacion7 <- ifelse(data$inflacion > 7, 1, 0)
