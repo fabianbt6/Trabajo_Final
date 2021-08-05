@@ -1,0 +1,222 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.1 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{apa/global//global/global}
+    \entry{Arestis2010}{article}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=75499a30114e2f80e2490b9e90512b74}{%
+           family={Arestis},
+           familyi={A\bibinitperiod},
+           given={Philip},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4393376335006b9db08cd396ca220f41}{%
+           family={Luintel},
+           familyi={L\bibinitperiod},
+           given={Ambika\bibnamedelima D.},
+           giveni={A\bibinitperiod\bibinitdelim D\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8e7d8b41f0a6868af3ed8256fb4d6dc2}{%
+           family={Luintel},
+           familyi={L\bibinitperiod},
+           given={Kul\bibnamedelima B.},
+           giveni={K\bibinitperiod\bibinitdelim B\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{f3ffae4ccb26f34034aa83ce714a79c6}
+      \strng{fullhash}{55962fef2b5c201203c9e617f140e285}
+      \strng{bibnamehash}{55962fef2b5c201203c9e617f140e285}
+      \strng{authorbibnamehash}{55962fef2b5c201203c9e617f140e285}
+      \strng{authornamehash}{f3ffae4ccb26f34034aa83ce714a79c6}
+      \strng{authorfullhash}{55962fef2b5c201203c9e617f140e285}
+      \field{sortinit}{A}
+      \field{sortinithash}{a3dcedd53b04d1adfd5ac303ecd5e6fa}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{year}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{This article examines whether financial structure influences economic growth. Recent empirical studies examine this issue by utilizing panel and cross-section approaches. We use time series data and methods, along with the dynamic heterogeneous panel approach in a sample of six low and middle income countries. We find that cross country data cannot be pooled and that financial structure significantly affects real per capita output. We also find that panel estimates, in most cases, do not correspond to country specific estimates, and hence may proffer incorrect inferences for several countries of the panel. © 2010 Taylor {\&} Francis.}
+      \field{issn}{09603107}
+      \field{journaltitle}{Applied Financial Economics}
+      \field{number}{19}
+      \field{title}{{Financial structure and economic growth: Evidence from time series analyses}}
+      \field{volume}{20}
+      \field{year}{2010}
+      \field{pages}{1479\bibrangedash 1492}
+      \range{pages}{14}
+      \verb{doi}
+      \verb 10.1080/09603107.2010.508716
+      \endverb
+      \verb{file}
+      \verb :C$\backslash$:/Users/FBrenes/OneDrive - Habitat for Humanity International/Estad{\'{i}}stica/Pr{\'{a}}ctica Profesional/Bibliograf{\'{i}}a/arestis2010.pdf:pdf
+      \endverb
+      \keyw{an{á}lisis emp{í}rico}
+    \endentry
+    \entry{Beck2000}{article}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=62f5c3ee30c3de954fc7b28fd19696ca}{%
+           family={Beck},
+           familyi={B\bibinitperiod},
+           given={Thorsten},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4c1cd77b28a968c78efc1362f3c7dd21}{%
+           family={Levine},
+           familyi={L\bibinitperiod},
+           given={Ross},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f421d97467b49ebed07c3ac261c9640d}{%
+           family={Loayza},
+           familyi={L\bibinitperiod},
+           given={Norman},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{952ebcc76ab53b96ec9db97efb764280}
+      \strng{fullhash}{74700c12ff1bc9c6d39bb8fe41e6169c}
+      \strng{bibnamehash}{74700c12ff1bc9c6d39bb8fe41e6169c}
+      \strng{authorbibnamehash}{74700c12ff1bc9c6d39bb8fe41e6169c}
+      \strng{authornamehash}{952ebcc76ab53b96ec9db97efb764280}
+      \strng{authorfullhash}{74700c12ff1bc9c6d39bb8fe41e6169c}
+      \field{sortinit}{B}
+      \field{sortinithash}{8de16967003c7207dae369d874f1456e}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{year}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{This paper evaluates the empirical relation between the level of financial intermediary development and (i) economic growth, (ii) total factor productivity growth, (iii) physical capital accumulation, and (iv) private savings rates. We use (a) a pure cross-country instrumental variable estimator to extract the exogenous component of financial intermediary development, and (b) a new panel technique that controls for biases associated with simultaneity and unobserved country-specific effects. After controlling for these potential biases, we find that (1) financial intermediaries exert a large, positive impact on total factor productivity growth, which feeds through to overall GDP growth and (2) the long-run links between financial intermediary development and both physical capital growth and private savings rates are tenuous. © 2000 Elsevier Science B.V.}
+      \field{issn}{0304405X}
+      \field{journaltitle}{Journal of Financial Economics}
+      \field{number}{1-2}
+      \field{title}{{Finance and the sources of growth}}
+      \field{volume}{58}
+      \field{year}{2000}
+      \field{pages}{261\bibrangedash 300}
+      \range{pages}{40}
+      \verb{doi}
+      \verb 10.1016/s0304-405x(00)00072-6
+      \endverb
+      \verb{file}
+      \verb :C$\backslash$:/Users/FBrenes/OneDrive - Habitat for Humanity International/Estad{\'{i}}stica/Pr{\'{a}}ctica Profesional/Bibliograf{\'{i}}a/10.1.1.12.4723.pdf:pdf
+      \endverb
+      \keyw{Capital accumulation,Economic growth,Financial development,G21,O16,O40,Productivity growth,Saving,an{á}lisis emp{í}rico}
+    \endentry
+    \entry{Chortareas2015}{article}{}
+      \name{author}{4}{}{%
+        {{un=0,uniquepart=base,hash=6c8d95c3a6446005b2f5427023ef8064}{%
+           family={Chortareas},
+           familyi={C\bibinitperiod},
+           given={Georgios},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=0052ada6dda9c8e602b2a21510b97f63}{%
+           family={Magkonis},
+           familyi={M\bibinitperiod},
+           given={Georgios},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b23b93f733192b217594f8b4fa299afd}{%
+           family={Moschos},
+           familyi={M\bibinitperiod},
+           given={Demetrios},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=c434aeeeb0ae145b4617c0638e97958a}{%
+           family={Panagiotidis},
+           familyi={P\bibinitperiod},
+           given={Theodore},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{41fcbd21efe6809f78a53023a1968bf0}
+      \strng{fullhash}{536188cd36c83e58be3f23f36c864cbb}
+      \strng{bibnamehash}{536188cd36c83e58be3f23f36c864cbb}
+      \strng{authorbibnamehash}{536188cd36c83e58be3f23f36c864cbb}
+      \strng{authornamehash}{41fcbd21efe6809f78a53023a1968bf0}
+      \strng{authorfullhash}{536188cd36c83e58be3f23f36c864cbb}
+      \field{sortinit}{C}
+      \field{sortinithash}{4c244ceae61406cdc0cc2ce1cb1ff703}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{year}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{This study considers the effects of financial development on output in a panel cointegration framework, focusing on the implications of trade and financial openness. Our analysis indicates that after controlling for cross-sectional dependence, the typical relationship between finance and output does not hold in the long run. This relationship, however, is re-established once we account for economic openness. While trade openness emerges as more important for developing countries, financial openness is more important for advanced economies. In the long run, causality runs from financial development to output in the advanced economies, while in developing economies causality is bidirectional. There is no short-run causality between financial development and output, however.}
+      \field{issn}{14679361}
+      \field{journaltitle}{Review of Development Economics}
+      \field{number}{1}
+      \field{title}{{Financial Development and Economic Activity in Advanced and Developing Open Economies: Evidence from Panel Cointegration}}
+      \field{volume}{19}
+      \field{year}{2015}
+      \field{pages}{163\bibrangedash 177}
+      \range{pages}{15}
+      \verb{doi}
+      \verb 10.1111/rode.12132
+      \endverb
+      \verb{file}
+      \verb :C$\backslash$:/Users/FBrenes/OneDrive - Habitat for Humanity International/Estad{\'{i}}stica/Pr{\'{a}}ctica Profesional/Bibliograf{\'{i}}a/rode.12132.pdf:pdf
+      \endverb
+      \keyw{an{á}lisis emp{í}rico}
+    \endentry
+    \entry{Levine1997}{article}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=4c1cd77b28a968c78efc1362f3c7dd21}{%
+           family={Levine},
+           familyi={L\bibinitperiod},
+           given={Ross},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \strng{fullhash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \strng{bibnamehash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \strng{authorbibnamehash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \strng{authornamehash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \strng{authorfullhash}{4c1cd77b28a968c78efc1362f3c7dd21}
+      \field{sortinit}{L}
+      \field{sortinithash}{dad3efd0836470093a7b4a7bb756eb8c}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{year}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{00220515}
+      \field{journaltitle}{Journal of Economic Literature}
+      \field{number}{2}
+      \field{title}{{Financial Development and Economic Growth: Views and Agenda}}
+      \field{volume}{35}
+      \field{year}{1997}
+      \field{pages}{688\bibrangedash 726}
+      \range{pages}{39}
+      \verb{doi}
+      \verb 10.1596/1813-9450-1678
+      \endverb
+      \verb{file}
+      \verb :C$\backslash$:/Users/FBrenes/OneDrive - Habitat for Humanity International/Estad{\'{i}}stica/Pr{\'{a}}ctica Profesional/Bibliograf{\'{i}}a/Financial development and Economic Growth{\_}Views and Agenda.pdf:pdf
+      \endverb
+      \keyw{an{á}lisis emp{í}rico,nexo te{ó}rico}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

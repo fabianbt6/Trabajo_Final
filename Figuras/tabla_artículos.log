@@ -1,0 +1,632 @@
+This is XeTeX, Version 3.14159265-2.6-0.999992 (MiKTeX 20.6.29) (preloaded format=xelatex 2021.1.18)  19 APR 2021 22:19
+entering extended mode
+**./tabla_artículos.tex
+(tabla_artículos.tex
+LaTeX2e <2020-02-02> patch level 5
+L3 programming layer <2020-07-17>
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\article.cls
+"
+Document Class: article 2019/12/20 v1.4l Standard LaTeX document class
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\size10.clo"
+File: size10.clo 2019/12/20 v1.4l Standard LaTeX file (size option)
+)
+\c@part=\count164
+\c@section=\count165
+\c@subsection=\count166
+\c@subsubsection=\count167
+\c@paragraph=\count168
+\c@subparagraph=\count169
+\c@figure=\count170
+\c@table=\count171
+\abovecaptionskip=\skip47
+\belowcaptionskip=\skip48
+\bibindent=\dimen134
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/tools\array.sty"
+Package: array 2019/08/31 v2.4l Tabular extension package (FMi)
+\col@sep=\dimen135
+\ar@mcellbox=\box45
+\extrarowheight=\dimen136
+\NC@list=\toks15
+\extratabsurround=\skip49
+\backup@length=\skip50
+\ar@cellbox=\box46
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/changepage\chang
+epage.sty"
+Package: changepage 2009/10/20 v1.0c check page and change page layout
+\c@cp@cntr=\count172
+\cp@tempcnt=\count173
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/float\float.sty"
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count174
+\float@exts=\toks16
+\float@box=\box47
+\@float@everytoks=\toks17
+\@floatcapt=\box48
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/babel\babel.st
+y"
+Package: babel 2020/07/13 3.47 The Babel package
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/babel\babel.de
+f"
+File: babel.def 2020/07/13 3.47 Babel common definitions
+\babel@savecnt=\count175
+\U@D=\dimen137
+\l@babelnohyphens=\language79
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/babel\xebabel.
+def"
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/babel\txtbabel
+.def"))
+\bbl@readstream=\read2
+)
+\bbl@dirlevel=\count176
+
+*************************************
+* Local config file bblopts.cfg used
+*
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/arabi\bblopts.cf
+g"
+File: bblopts.cfg 2005/09/08 v0.1 add Arabic and Farsi to "declared" options of
+ babel
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/babel-spanish\sp
+anish.ldf"
+Language: spanish.ldf 2016/03/03 v5.0p Spanish support from the babel system
+\es@quottoks=\toks18
+\es@quotdepth=\count177
+))
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/tools\longtable.
+sty"
+Package: longtable 2020/01/07 v4.13 Multi-page Table package (DPC)
+\LTleft=\skip51
+\LTright=\skip52
+\LTpre=\skip53
+\LTpost=\skip54
+\LTchunksize=\count178
+\LTcapwidth=\dimen138
+\LT@head=\box49
+\LT@firsthead=\box50
+\LT@foot=\box51
+\LT@lastfoot=\box52
+\LT@cols=\count179
+\LT@rows=\count180
+\c@LT@tables=\count181
+\c@LT@chunks=\count182
+\LT@p@ftn=\toks19
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\biblate
+x.sty"
+Package: biblatex 2019/12/01 v3.14 programmable bibliographies (PK/MW)
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/pdftexcmds\pdf
+texcmds.sty"
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
+)
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/infwarerr\infw
+arerr.sty"
+Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/iftex\iftex.st
+y"
+Package: iftex 2020/03/06 v1.0d TeX engine tests
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ltxcmds\ltxcmd
+s.sty"
+Package: ltxcmds 2019/12/15 v1.24 LaTeX kernel commands for general use (HO)
+)
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode not found.
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/etoolbox\etoolbo
+x.sty"
+Package: etoolbox 2020/07/15 v2.5i e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count183
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphics\keyval.
+sty"
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks20
+)
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/kvoptions\kvopti
+ons.sty"
+Package: kvoptions 2019/11/29 v3.13 Key value format for package options (HO)
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/generic/kvsetkeys\kvse
+tkeys.sty"
+Package: kvsetkeys 2019/12/15 v1.18 Key value parser (HO)
+))
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/logreq\logreq.st
+y"
+Package: logreq 2010/08/04 v1.0 xml request logger
+\lrq@indent=\count184
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/logreq\logreq.de
+f"
+File: logreq.def 2010/08/04 v1.0 logreq spec v1.0
+))
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\ifthen.sty"
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+) ("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/url\url.sty"
+\Urlmuskip=\muskip16
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+\c@tabx@nest=\count185
+\c@listtotal=\count186
+\c@listcount=\count187
+\c@liststart=\count188
+\c@liststop=\count189
+\c@citecount=\count190
+\c@citetotal=\count191
+\c@multicitecount=\count192
+\c@multicitetotal=\count193
+\c@instcount=\count194
+\c@maxnames=\count195
+\c@minnames=\count196
+\c@maxitems=\count197
+\c@minitems=\count198
+\c@citecounter=\count199
+\c@maxcitecounter=\count266
+\c@savedcitecounter=\count267
+\c@uniquelist=\count268
+\c@uniquename=\count269
+\c@refsection=\count270
+\c@refsegment=\count271
+\c@maxextratitle=\count272
+\c@maxextratitleyear=\count273
+\c@maxextraname=\count274
+\c@maxextradate=\count275
+\c@maxextraalpha=\count276
+\c@abbrvpenalty=\count277
+\c@highnamepenalty=\count278
+\c@lownamepenalty=\count279
+\c@maxparens=\count280
+\c@parenlevel=\count281
+\blx@tempcnta=\count282
+\blx@tempcntb=\count283
+\blx@tempcntc=\count284
+\blx@maxsection=\count285
+\blx@maxsegment@0=\count286
+\blx@notetype=\count287
+\blx@parenlevel@text=\count288
+\blx@parenlevel@foot=\count289
+\blx@sectionciteorder@0=\count290
+\blx@entrysetcounter=\count291
+\labelnumberwidth=\skip55
+\labelalphawidth=\skip56
+\biblabelsep=\skip57
+\bibitemsep=\skip58
+\bibnamesep=\skip59
+\bibinitsep=\skip60
+\bibparsep=\skip61
+\bibhang=\skip62
+\blx@bcfin=\read3
+\blx@bcfout=\write3
+\blx@langwohyphens=\language80
+\c@mincomprange=\count292
+\c@maxcomprange=\count293
+\c@mincompwidth=\count294
+Package biblatex Info: Trying to load biblatex default data model...
+Package biblatex Info: ... file 'blx-dm.def' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\blx-dm.
+def"
+File: blx-dm.def 2019/12/01 v3.14 biblatex localization (PK/MW)
+)
+Package biblatex Info: Trying to load biblatex style data model...
+Package biblatex Info: ... file 'apa.dbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex-apa\apa
+.dbx"
+File: apa.dbx 2020/05/30 v9.13 APA biblatex style data model
+)
+Package biblatex Info: Trying to load biblatex custom data model...
+Package biblatex Info: ... file 'biblatex-dm.cfg' not found.
+\c@afterword=\count295
+\c@savedafterword=\count296
+\c@annotator=\count297
+\c@savedannotator=\count298
+\c@author=\count299
+\c@savedauthor=\count300
+\c@bookauthor=\count301
+\c@savedbookauthor=\count302
+\c@commentator=\count303
+\c@savedcommentator=\count304
+\c@editor=\count305
+\c@savededitor=\count306
+\c@editora=\count307
+\c@savededitora=\count308
+\c@editorb=\count309
+\c@savededitorb=\count310
+\c@editorc=\count311
+\c@savededitorc=\count312
+\c@foreword=\count313
+\c@savedforeword=\count314
+\c@holder=\count315
+\c@savedholder=\count316
+\c@introduction=\count317
+\c@savedintroduction=\count318
+\c@namea=\count319
+\c@savednamea=\count320
+\c@nameb=\count321
+\c@savednameb=\count322
+\c@namec=\count323
+\c@savednamec=\count324
+\c@translator=\count325
+\c@savedtranslator=\count326
+\c@shortauthor=\count327
+\c@savedshortauthor=\count328
+\c@shorteditor=\count329
+\c@savedshorteditor=\count330
+\c@groupauthor=\count331
+\c@savedgroupauthor=\count332
+\c@narrator=\count333
+\c@savednarrator=\count334
+\c@execproducer=\count335
+\c@savedexecproducer=\count336
+\c@execdirector=\count337
+\c@savedexecdirector=\count338
+\c@with=\count339
+\c@savedwith=\count340
+\c@labelname=\count341
+\c@savedlabelname=\count342
+\c@institution=\count343
+\c@savedinstitution=\count344
+\c@lista=\count345
+\c@savedlista=\count346
+\c@listb=\count347
+\c@savedlistb=\count348
+\c@listc=\count349
+\c@savedlistc=\count350
+\c@listd=\count351
+\c@savedlistd=\count352
+\c@liste=\count353
+\c@savedliste=\count354
+\c@listf=\count355
+\c@savedlistf=\count356
+\c@location=\count357
+\c@savedlocation=\count358
+\c@organization=\count359
+\c@savedorganization=\count360
+\c@origlocation=\count361
+\c@savedoriglocation=\count362
+\c@origpublisher=\count363
+\c@savedorigpublisher=\count364
+\c@publisher=\count365
+\c@savedpublisher=\count366
+\c@language=\count367
+\c@savedlanguage=\count368
+\c@origlanguage=\count369
+\c@savedoriglanguage=\count370
+\c@citation=\count371
+\c@savedcitation=\count372
+\c@pageref=\count373
+\c@savedpageref=\count374
+\shorthandwidth=\skip63
+\shortjournalwidth=\skip64
+\shortserieswidth=\skip65
+\shorttitlewidth=\skip66
+\shortauthorwidth=\skip67
+\shorteditorwidth=\skip68
+\locallabelnumberwidth=\skip69
+\locallabelalphawidth=\skip70
+\localshorthandwidth=\skip71
+\localshortjournalwidth=\skip72
+\localshortserieswidth=\skip73
+\localshorttitlewidth=\skip74
+\localshortauthorwidth=\skip75
+\localshorteditorwidth=\skip76
+Package biblatex Info: Trying to load enhanced support for Unicode engines...
+Package biblatex Info: ... file 'blx-unicode.def' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\blx-uni
+code.def")
+Package biblatex Info: Trying to load compatibility code...
+Package biblatex Info: ... file 'blx-compat.def' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\blx-com
+pat.def"
+File: blx-compat.def 2019/12/01 v3.14 biblatex compatibility (PK/MW)
+)
+Package biblatex Info: Trying to load generic definitions...
+Package biblatex Info: ... file 'biblatex.def' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\biblate
+x.def"
+File: biblatex.def 2019/12/01 v3.14 biblatex compatibility (PK/MW)
+\c@textcitecount=\count375
+\c@textcitetotal=\count376
+\c@textcitemaxnames=\count377
+\c@biburlbigbreakpenalty=\count378
+\c@biburlbreakpenalty=\count379
+\c@biburlnumpenalty=\count380
+\c@biburlucpenalty=\count381
+\c@biburllcpenalty=\count382
+\biburlbigskip=\muskip17
+\biburlnumskip=\muskip18
+\biburlucskip=\muskip19
+\biburllcskip=\muskip20
+\c@smartand=\count383
+)
+Package biblatex Info: Trying to load bibliography style 'apa'...
+Package biblatex Info: ... file 'apa.bbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex-apa\apa
+.bbx"
+File: apa.bbx 2020/05/30 v9.13 APA biblatex references style
+Package biblatex Info: Trying to load bibliography style 'standard'...
+Package biblatex Info: ... file 'standard.bbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex/bbx\sta
+ndard.bbx"
+File: standard.bbx 2019/12/01 v3.14 biblatex bibliography style (PK/MW)
+\c@bbx:relatedcount=\count384
+\c@bbx:relatedtotal=\count385
+))
+Package biblatex Info: Trying to load citation style 'apa'...
+Package biblatex Info: ... file 'apa.cbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex-apa\apa
+.cbx"
+File: apa.cbx 2020/05/30 v9.13 APA biblatex citation style
+Package biblatex Info: Delimiter 'nameyeardelim' in context '' already defined,
+ overwriting.
+Package biblatex Info: Delimiter 'nameyeardelim' in context 'textcite' already 
+defined, overwriting.
+Package biblatex Info: Delimiter 'andothersdelim' in context '' already defined
+, overwriting.
+Package biblatex Info: Redefining '\fullcite'.
+Package biblatex Info: Redefining '\citeauthor'.
+Package biblatex Info: Redefining '\citeyear'.
+Package biblatex Info: Redefining '\cite'.
+Package biblatex Info: Redefining '\cites'.
+Package biblatex Info: Redefining '\parencite'.
+Package biblatex Info: Redefining '\parencites'.
+Package biblatex Info: Redefining '\footcite'.
+Package biblatex Info: Redefining '\footcites'.
+Package biblatex Info: Redefining '\footcitetext'.
+Package biblatex Info: Redefining '\footcitetexts'.
+Package biblatex Info: Redefining '\smartcite'.
+Package biblatex Info: Redefining '\smartcites'.
+Package biblatex Info: Redefining '\textcite'.
+Package biblatex Info: Redefining '\textcites'.
+)
+Package biblatex Info: Trying to load configuration file...
+Package biblatex Info: ... file 'biblatex.cfg' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex\biblate
+x.cfg"
+File: biblatex.cfg 
+))
+
+Package biblatex Warning: 'babel/polyglossia' detected but 'csquotes' missing.
+(biblatex)                Loading 'csquotes' recommended.
+
+\@quotelevel=\count386
+\@quotereset=\count387
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/l3backend\l3back
+end-xdvipdfmx.def"
+File: l3backend-xdvipdfmx.def 2020-06-29 L3 backend support: xdvipdfmx
+\g__graphics_track_int=\count388
+\l__pdf_internal_box=\box53
+\g__pdf_backend_object_int=\count389
+\g__pdf_backend_annotation_int=\count390
+) (tabla_artículos.aux
+LaTeX Info: Redefining \. on input line 21.
+LaTeX Info: Redefining \% on input line 21.
+)
+\openout1 = `tabla_artículos.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 11.
+LaTeX Font Info:    Trying to load font information for TS1+cmr on input line 1
+1.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\ts1cmr.fd"
+File: ts1cmr.fd 2019/12/16 v2.5j Standard LaTeX font definitions
+)
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Info: Redefining \. on input line 11.
+LaTeX Info: Redefining \% on input line 11.
+Package biblatex Info: Trying to load language 'spanish' -> 'spanish-apa'...
+Package biblatex Info: ... file 'spanish-apa.lbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex-apa\spa
+nish-apa.lbx"
+File: spanish-apa.lbx 2020/05/30 v9.13 APA biblatex localisation
+Package biblatex Info: Trying to load language 'spanish'...
+Package biblatex Info: ... file 'spanish.lbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex/lbx\spa
+nish.lbx"
+File: spanish.lbx 2019/12/01 v3.14 biblatex localization (PK/MW)
+)
+Package biblatex Info: Trying to load language 'spanish'...
+Package biblatex Info: ... file 'spanish.lbx' found.
+
+("C:\Users\FBrenes\AppData\Local\Programs\MiKTeX 2.9\tex/latex/biblatex/lbx\spa
+nish.lbx"
+File: spanish.lbx 2019/12/01 v3.14 biblatex localization (PK/MW)
+))
+Package biblatex Info: XeTeX detected.
+(biblatex)             Assuming input encoding 'utf8'.
+Package biblatex Info: Automatic encoding selection.
+(biblatex)             Assuming data encoding 'utf8'.
+\openout3 = `tabla_artículos.bcf'.
+
+Package biblatex Info: Trying to load bibliographic data...
+Package biblatex Info: ... file 'tabla_artículos.bbl' found.
+ (tabla_artículos.bbl)
+Package biblatex Info: Reference section=0 on input line 11.
+Package biblatex Info: Reference segment=0 on input line 11.
+
+Overfull \hbox (94.22537pt too wide) in alignment at lines 14--20
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (94.22537pt too wide) in alignment at lines 20--27
+ [] [] [] [] 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 30--30
+[]|\TU/lmr/m/n/9 Financial Deve-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 30--30
+\TU/lmr/m/n/9 nomic Growth:
+ []
+
+
+Underfull \hbox (badness 1454) in paragraph at lines 32--33
+[]\TU/lmr/m/n/9 Organizar un marco
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 32--33
+\TU/lmr/m/n/9 crecimiento-sistema
+ []
+
+
+Underfull \hbox (badness 3386) in paragraph at lines 40--40
+[]|[]\TU/lmr/m/n/9 Beck y col.,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 52--52
+[]|\TU/lmr/m/n/9 Financial struc-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 52--52
+\TU/lmr/m/n/9 ture and eco-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 52--52
+\TU/lmr/m/n/9 nomic growth:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 52--52
+\TU/lmr/m/n/9 Evidence from
+ []
+
+
+Underfull \hbox (badness 1152) in paragraph at lines 53--53
+[]|\TU/lmr/m/n/9 Examinar si la estructura
+ []
+
+
+Underfull \hbox (badness 2173) in paragraph at lines 53--53
+\TU/lmr/m/n/9 sada en bancos vs basa-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 61--61
+[]|[]\TU/lmr/m/n/9 Chortareas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 62--62
+[]|\TU/lmr/m/n/9 Financial De-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 62--62
+\TU/lmr/m/n/9 velopment and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 62--62
+\TU/lmr/m/n/9 Economic Acti-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 62--62
+\TU/lmr/m/n/9 and Developing
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 62--62
+\TU/lmr/m/n/9 Evidence from
+ []
+
+
+Underfull \hbox (badness 1502) in paragraph at lines 63--63
+[]|\TU/lmr/m/n/9 Analizar la relación entre
+ []
+
+
+LaTeX Warning: Citation 'Aghion2004' on page 1 undefined on input line 71.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 72--72
+[]|\TU/lmr/m/n/9 Financial de-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 72--72
+\TU/lmr/m/n/9 velopment and
+ []
+
+
+Overfull \hbox (94.22537pt too wide) in alignment at lines 27--80
+ [] [] [] [] 
+ []
+
+[1
+
+] [2]
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 82.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 82.
+ [3] (tabla_artículos.aux
+LaTeX Info: Redefining \. on input line 23.
+LaTeX Info: Redefining \% on input line 23.
+)
+
+LaTeX Warning: There were undefined references.
+
+
+Package biblatex Warning: Please (re)run Biber on the file:
+(biblatex)                tabla_artículos
+(biblatex)                and rerun LaTeX afterwards.
+
+Package logreq Info: Writing requests to 'tabla_artículos.run.xml'.
+\openout1 = `tabla_artículos.run.xml'.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 9641 strings out of 414506
+ 176777 string characters out of 2902240
+ 958688 words of memory out of 3000000
+ 26809 multiletter control sequences out of 15000+200000
+ 535136 words of font info for 35 fonts, out of 3000000 for 9000
+ 1348 hyphenation exceptions out of 8191
+ 41i,7n,47p,1012b,4837s stack positions out of 5000i,500n,10000p,200000b,50000s
+
+Output written on tabla_artículos.pdf (3 pages).

@@ -545,7 +545,6 @@ lrtest(mod1, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en 
 
 lrtest(mod2, mod3) # Se rechaza la hipotésis nula de que la loglik es igual en ambos modelos, con alfa de 5%.
 
- 
 #Modelo VAR 4===============================
 mod4 <- VAR(dplyr::select(data, log_pibryoy, cred_pib, tbp),
             type = "both",

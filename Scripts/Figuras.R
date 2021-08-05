@@ -11,15 +11,12 @@ library(ggiraph)
 library(plotly)
 library(lubridate)
 library(urca)
-library(fUnitRoots)
 library(zoo)
 library(car)
-library(ggiraph)
 library(kableExtra)
 library(lmtest)
 library(vars)
 library(latex2exp)
-library(tsDyn)
 library(tikzDevice)
 library(gtsummary)
 
@@ -252,17 +249,20 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_apertcomercial.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
+
 tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
+#tikz(standAlone = FALSE, console = T, width = 4, height = 3)
 g_apertcomercial <- ggplot(data = data, aes(x = fecha, y = apert_comercial)) + 
   geom_line() +
   ylim(0.50, 1) +
   ylab("En términos del PIB nominal") + 
   theme_classic()
 
+#ggsave(filename = tf, plot = g_apertcomercial)
 print(g_apertcomercial)
-
 dev.off()
+
 
 setwd(oldwd)
 #Grafico IED en función del PIB===================
@@ -297,6 +297,24 @@ g_pibusa <- ggplot(data = data, aes(x = fecha, y = log_pibusayoy)) +
   theme_classic()
 
 print(g_pibusa)
+
+dev.off()
+
+setwd(oldwd)
+
+#Grafico de variación del tipo de cambio=========================
+td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
+tf <- file.path(td,'g_vartc.tex')
+oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(td)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+g_vartc <- ggplot(data = data, aes(x = fecha, y = vartc)) + 
+  geom_line() +
+  ylab("variación") + 
+  theme_classic()
+
+print(g_vartc)
 
 dev.off()
 
@@ -450,14 +468,18 @@ data %>% dplyr::select(fecha, log_pibryoy, cred_pib) %>%
   dplyr::select(-fecha) %>% 
   cor()
 
-
 cormat <- data %>% 
-  select(log_pibryoy, cred_pib, ied_pib, log_pibusayoy, mif, inflacion) %>% 
+  select(cpib.cri, des.sf, apert_comercial, cpib.usa, inflacion, tbp, vartc) %>% 
   cor() %>% 
   round(2)
 
-colnames(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Crec. EUA", "MIF", "Inflación")
-row.names(cormat) <- c("Crec. Económico", "Desarrollo del S.F.", "IED", "Crec. EUA", "MIF", "Inflación")
+nombres <- c("Crec. Económico", "Des. S.F.", "Apert. Com.", "Crec. EUA", "Inflación", "TBP", "Var.TC")
+colnames(cormat) <- nombres
+row.names(cormat) <- nombres
+
+mod_lm <- lm(cpib.cri ~ des.sf + cpib.usa +  apert_comercial + vartc, data = data)
+summary(mod_lm)
+vif(mod_lm)
 
 knitr::kable(cormat, booktabs = TRUE, 
              caption = "Matriz de correlaciones",
@@ -467,7 +489,6 @@ knitr::kable(cormat, booktabs = TRUE,
                 font_size = 7) %>% 
   column_spec(1, width = "10em") 
   
-
 
 #Grafico correlogramas niveles============================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
@@ -568,18 +589,16 @@ knitr::kable(tab_diff_df, booktabs = TRUE,
 
 #Tabla resultados del análisis de cointegración====================
 
-cajo_covars <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
-      type = "eigen",  
-      K = 5, 
-      dumvar = dplyr::select(data, log_pibusayoy, ied_pib, mif, inflacion),
-      ecdet = "const", 
-      spec = "longrun") %>% 
+cajo_covars <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
+                     type = "eigen",
+                     K = 7, 
+                     dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4, tendencia),
+                     spec = "longrun") %>% 
   summary()
 
 cajo_simple <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
       type = "eigen",  
-      K = 5, 
-      ecdet = "const", 
+      K = 6, 
       spec = "longrun") %>% 
   summary()
 
@@ -591,15 +610,15 @@ tabla_cajo1 <- tibble("Estadístico" = round(cajo_simple@teststat, 2),
   relocate(`Hipótesis`, .before = `Estadístico`)
 
 tabla_cajo2 <- tibble(`Hipótesis` = c("r <= 1", "r = 0"), 
-                      "Modelo 10" = round(cajo_simple@teststat, 2),
-                      "Modelo 11" = round(cajo_covars@teststat, 2),
+                      "Modelo 9" = round(cajo_simple@teststat, 2),
+                      "Modelo 10" = round(cajo_covars@teststat, 2),
                       round(cajo_simple@cval, 2) %>% as_tibble())
 
 knitr::kable(tabla_cajo2, booktabs = TRUE, 
              caption = "Rango de cointegración: Estadístico de auto-valor máximo" ,
              label = "cajo",
              format = "latex") %>% 
-  kable_styling(font_size = 8) %>% 
+  kable_styling(font_size = 10) %>% 
   column_spec(1, width = "10em") %>% 
   add_header_above(c("", "Estadístico" = 2, "Valores Críticos"  = 3))
 
@@ -659,17 +678,29 @@ dev.off()
 
 setwd(oldwd)
 
-
-
-
-
 #Modelo VAR===================================================
+
 mod <- VAR(dplyr::select(data, cpib.cri, des.sf),
            type = "both",
-           lag.max = 12, ic = "AIC",
-           exogen = dplyr::select(data, cpib.usa, ied.pib, mif, inflacion))
+           lag.max = 12, 
+           ic = "AIC", 
+           exogen = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4))
 
+cor(dplyr::select(data, cpib.cri, des.sf, cpib.usa, inflacion, vartc, tir))
 summary(mod)
+
+VARselect(dplyr::select(data, cpib.cri, des.sf),
+          type = "both",
+          lag.max = 12,
+          exogen = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4))
+
+mod_lm <- lm(cpib.cri ~ des.sf + apert_comercial + cpib.usa + inflacion + tbp + vartc, data = data)  
+
+summary(mod_lm)
+vif(mod_lm)
+
+mod$datamat
+mod1$datamat
 
 #Análisis=======================================================
 roots(mod, modulus = T)
@@ -684,12 +715,12 @@ residuals_mod <- data.frame(fecha = data$fecha[(nrow(data) - nrow(residuals(mod)
 residuals_mod_long <- residuals_mod %>%
   pivot_longer(-fecha, names_to = "indicador", values_to = "residuo estandarizado")
 
-acf(residuals(mod), plot = F)
-
 serial.test(mod, type = "PT.asymptotic")
-serial.test(mod, type = "BG", lags.bg = 16)
+serial.test(mod, type = "BG")
 serial.test(mod, type = "PT.adjusted")
 serial.test(mod, type = "ES")
+
+ccf(residuals(mod)[, 1],  residuals(mod)[, 2], plot = T)
 
 ### Heterocedasticidad
 arch.test(mod, lags.multi = 5, multivariate.only = T)
@@ -743,8 +774,8 @@ residuals_mod_long %>%
   ggtitle("QQplots los residuos del Modelo VAR")
 
 #Granger causalidad
-causality(mod, cause = "cred_pib")
-causality(mod, cause = "log_pibryoy")
+causality(mod, cause = "des.sf")
+causality(mod, cause = "cpib.cri")
 
 #Tabla Coeficientes delo modelo VAR======================
 tab_var <- tibble(`Parámetros` = names(mod$varresult$cpib.cri$coefficients), 
@@ -764,7 +795,7 @@ tab_var <- tibble(`Parámetros` = names(mod$varresult$cpib.cri$coefficients),
   column_to_rownames(var = "Parámetros")
 
 knitr::kable(tab_var, booktabs = TRUE, 
-             caption = "Coeficientes estimados del modelo VAR(5)",
+             caption = "Coeficientes estimados del modelo VAR(4)",
              label = "modelo_var",
              format = "latex") %>% 
   kable_styling(font_size = 10) %>% 
@@ -787,18 +818,25 @@ tabla_var_tests <- tibble(Prueba = c("Portmanteau", "ARCH", "Jarque-Bera"),
                                          round(arch$arch.mul$p.value, 2), 
                                          round(jb$jb.mul$JB$p.value, 2)))  
 
+knitr::kable(tabla_var_tests, booktabs = TRUE, 
+             caption = "Pruebas de diagnóstico del VAR",
+             label = "modelo_var_pruebas",
+             format = "latex") %>% 
+  kable_styling(font_size = 11)
 #Grafico acf modelo var========
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_acf_var.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 4, height = 3)
+
+tikz(tf, standAlone = FALSE, width = 4, height = 4)
 
 t_acf_var <- tibble(acf(residuals(mod), plot = F)$acf %>% as_tibble())
 colnames(t_acf_var) = c("cpib.cri", "cpib.cri - cred.pib", "des.sf", "des.sf - cpib.cri")
 
-ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
+tikz(console = T, width = 4, height = 4)
 
+ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
 g_acf_var <- t_acf_var %>%
   dplyr::select(cpib.cri, des.sf) %>% 
   mutate(rezago = 1:n()) %>%  
@@ -814,9 +852,12 @@ g_acf_var <- t_acf_var %>%
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 6), 
-        axis.text=element_text(size = 6), 
+        axis.title = element_text(size = 7), 
+        axis.text=element_text(size = 7), 
         strip.text.y = element_text(size = 8))
+
+
+ggsave(tf, plot = g_acf_var, device = "tex")
 
 print(g_acf_var)
 
@@ -834,7 +875,7 @@ tikz(tf, standAlone = FALSE, width = 4, height = 3)
 ic <- qnorm(1 - 0.05 / 2) / sqrt(nrow(data))
 
 g_ccf_var <- tibble(ccf = ccf(residuals(mod)[, 1], residuals(mod)[, 2], plot = F)$acf, 
-                    rezago = -15:15) %>%  
+                    rezago = -16:16) %>%  
   ggplot(aes(x = rezago,  y = ccf)) +
   geom_segment(mapping = aes(xend = rezago, yend = 0)) +
   geom_hline(yintercept = 0) +
@@ -897,17 +938,17 @@ tab_raizes <- tab_raizes %>% pivot_wider(param, cons, values_from = val) %>%
   column_to_rownames("param")
 
 knitr::kable(tab_raizes, booktabs = TRUE, 
-             caption = "Módulo de los valores propios de los coeficientes del Modelo VAR (5)",
+             caption = "Módulo de los valores propios de los coeficientes del Modelo VAR (4)",
              label = "estabilidad_var",
              format = "latex") %>% 
   kable_styling(font_size = 10)
 
 #Granger causalidad
-granger_cred <- causality(mod, cause = "cred_pib")
-granger_pib <- causality(mod, cause = "log_pibryoy")
+granger_cred <- causality(mod, cause = "des.sf")
+granger_pib <- causality(mod, cause = "cpib.cri")
 
-tabla_caus <- tibble(Prueba  = c("D.S.F granger-causa C.E.", 
-                                  "C.E. granger-causa D.S.F", 
+tabla_caus <- tibble(Prueba  = c("D.S.F causa en el sentido de Granger a C.E.", 
+                                  "C.E. causa en el sentido de Granger a D.S.F", 
                                   "Wald"),
                      `Estadístico` = c(round(granger_cred$Granger$statistic[1, ], 3), 
                                        round(granger_pib$Granger$statistic[1, ], 3),
@@ -924,11 +965,7 @@ knitr::kable(tabla_caus, booktabs = TRUE,
   footnote(general = c("C.E. = Crecimiento económico", 
                      "D.S.F. = Desarrollo del Sistema Financiero"))
 
-                                       
-                     
-
-
-
+                                      
 #Gráfico impulso-respuesta dsf_crec========================
 td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/github/Trabajo_Final/Figuras"
 tf <- file.path(td,'g_irf_dsf.tex')
@@ -936,17 +973,36 @@ oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
 tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-dsf_crec <- irf_comparativo(list(mod), "mod1", 
-                            impulse_var = "cpib.cri", 
-                            resp_var = "des.sf")
+irf1 <- irf(mod,
+            impulse = "des.sf",
+            response = "cpib.cri",
+            n.ahead = 24,
+            cumulative = F)  
 
-g_irf_dsf <- irf_ggplot(dsf_crec, tit = "", lab = "crecimiento económico") + 
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 8), 
-        axis.text=element_text(size = 8), 
-        legend.position = "none")
+var_dsf_crec_simple <- tibble(irf = irf1$irf %>% unlist(), 
+                              l_inf = irf1$Lower %>% unlist(),
+                              l_sup = irf1$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto simple", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
+
+g_irf_dsf <- var_dsf_crec_simple %>% 
+  ggplot(aes(x = periodo, y = irf)) +
+  geom_line(size = 0.65, colour = "red") +
+  scale_x_continuous(breaks = seq(0, 36, by = 4)) +
+  geom_hline(yintercept = 0) +  
+  geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
+            size = 0.65) + 
+  geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", linetype = "dashed", 
+            size = 0.65) +
+  ylab("crec. econ.") +
+  theme_bw() %+replace%
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+        axis.title = element_text(size = 7), 
+        axis.text=element_text(size = 7), 
+        strip.text.y = element_text(size = 7))
 
 print(g_irf_dsf)
 
@@ -961,20 +1017,36 @@ oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
 tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-crec_dsf_simple <- irf_comparativo(list(mod), "mod1",
-                                   impulse_var = "log_pibryoy",
-                                   resp_var = "cred_pib",
-                                   acumulado = F)
+irf1 <- irf(mod,
+            impulse = "cpib.cri",
+            response = "des.sf",
+            n.ahead = 24,
+            cumulative = F)  
 
+var_crec_dsf_simple <- tibble(irf = irf1$irf %>% unlist(), 
+                              l_inf = irf1$Lower %>% unlist(),
+                              l_sup = irf1$Upper %>% unlist()) %>% 
+  mutate(tipo = "Efecto simple", 
+         modelo = "mod1", 
+         periodo = 0:(nrow(.) - 1))
 
-g_irf_crec <- irf_ggplot(crec_dsf, tit = "", lab = "créditos (en términos del PIB)") + 
-  theme_bw() + 
-  facet_wrap(tipo ~ ., scales = "free_y") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        axis.title = element_text(size = 8), 
-        axis.text=element_text(size = 8), 
-        legend.position = "none")
+g_irf_crec <- var_crec_dsf_simple %>% 
+  ggplot(aes(x = periodo, y = irf)) +
+  geom_line(size = 0.65, colour = "red") +
+  scale_x_continuous(breaks = seq(0, 36, by = 4)) +
+  geom_hline(yintercept = 0) +  
+  geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
+            size = 0.65) + 
+  geom_line(aes(x = periodo, y = l_inf), colour = "darkgrey", linetype = "dashed", 
+            size = 0.65) +
+  ylab("Desarrollo del s.f.") +
+  theme_bw() %+replace%
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+        axis.title = element_text(size = 7), 
+        axis.text=element_text(size = 7), 
+        strip.text.y = element_text(size = 7))
 
 print(g_irf_crec)
 
@@ -983,47 +1055,72 @@ dev.off()
 setwd(oldwd)
 
 
-vecm.r1$rlm$effects$
+
+
+
+
 
 
 #Modelo VECM===================================================
+
+determ_vars <- tibble(fecha = data$fecha) %>% 
+  mutate(tendencia = 1:n())
+
 vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
               type = "eigen",
-              K = 5,
-              dumvar = dplyr::select(data, cpib.usa, ied.pib, mif, inflacion),
-              ecdet = "const",
-              spec = "transitory") 
+              ecdet  = "trend",
+              K = 7, 
+              dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4),
+              spec = "longrun") 
+
+round(vecm@lambda, 6)
+summary(vecm)
+dev.off()
 
 vecm.r1 <- cajorls(vecm, r = 1)
-
 summary(vecm.r1$rlm)
 
-plot(vecm.irf_dsf)
+vecm.level <- vec2var(vecm, 1)
 
-vecm.irf_ce <- irf(vec2var(vecm, 1), 
-                   response = "cpib.cri",
-                   impulse = "des.sf",
-                   n.ahead = 36 , boot = TRUE, cumulative = T)
+arch.test(vecm.level)
 
-plot(vecm.irf_ce)
+normality.test(vecm.level)
+
+serial.test(vecm.level)
+
+#Parámetros de corrección de error=======================
+
+knitr::kable(vecm@V, booktabs = TRUE, 
+             caption = "Matriz",
+             label = "modelo beta",
+             format = "latex") %>% 
+  kable_styling(font_size = 11)
+
+knitr::kable(vecm@W, booktabs = TRUE, 
+             caption = "Matriz",
+             label = "vecm_alpha",
+             format = "latex") %>% 
+  kable_styling(font_size = 11)
+
+vecm@PI
+
+vecm@W %*% t(vecm@V)
 
 #Tabla Coeficientes delo modelo VECM======================
 
 str(vec2var(vecm))
 
-vecm.r1$rlm$assign
+vecm.r1$rlm$coefficients
 
-summary(vecm.r1$rlm)
-
-tab_var <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients), 
-                  cpib.cri = round(vecm.r1$rlm$coefficients[, 1], 3),
-                  t1 = round(summary(mod)$varresult$cpib.cri$coefficients[, "t value"], 2),
-                  pvalue1 = summary(mod)$varresult$cpib.cri$coefficients[, "Pr(>|t|)"],
-                  stars1 = ifelse(pvalue1 <= 0.001, " ***", ifelse(pvalue1 <= 0.01, " **", 
+tab_vecm <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients),
+                   cpib.cri = round(vecm.r1$rlm$coefficients[, 1], 3),
+                   t1 = round(summary(vecm.r1$rlm)$'Response cpib.cri.d'$coefficients[, "t value"], 2),
+                   pvalue1 = summary(vecm.r1$rlm)$'Response cpib.cri.d'$coefficients[, "Pr(>|t|)"],
+                   stars1 = ifelse(pvalue1 <= 0.001, " ***", ifelse(pvalue1 <= 0.01, " **", 
                                                                    ifelse(pvalue1 <= 0.05, " *", ifelse(pvalue1 <= 0.1, ".", "")))), 
                   des.sf = round(vecm.r1$rlm$coefficients[, 2], 3), 
-                  t2 = round(summary(mod)$varresult$des.sf$coefficients[, "t value"], 2),
-                  pvalue2 = summary(mod)$varresult$des.sf$coefficients[, "Pr(>|t|)"],
+                  t2 = round(summary(vecm.r1$rlm)$'Response des.sf.d'$coefficients[, "t value"], 2),
+                  pvalue2 = summary(vecm.r1$rlm)$'Response des.sf.d'$coefficients[, "Pr(>|t|)"],
                   stars2 = ifelse(pvalue2 <= 0.001, " ***", ifelse(pvalue2 <= 0.01, " **", 
                                                                    ifelse(pvalue2 <= 0.05, " *", ifelse(pvalue2 <= 0.1, ".", ""))))) %>%  
   mutate(cpib.cri = paste0(paste0(paste0(paste0(cpib.cri, " ("),t1),")"), stars1),
@@ -1031,11 +1128,9 @@ tab_var <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients),
   dplyr::select(`Parámetros`, cpib.cri, des.sf) %>% 
   column_to_rownames(var = "Parámetros")
 
-
-
-knitr::kable(tab_var, booktabs = TRUE, 
-             caption = "Coeficientes estimados del modelo VAR(5)",
-             label = "modelo_var",
+knitr::kable(tab_vecm, booktabs = TRUE, 
+             caption = "Coeficientes estimados del modelo VECM (7)",
+             label = "vecm",
              format = "latex") %>% 
   kable_styling(font_size = 10) %>% 
   column_spec(1, width = "3cm") %>% 
@@ -1044,6 +1139,24 @@ knitr::kable(tab_var, booktabs = TRUE,
   footnote(general = c("Códigos de significancia: 0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1", 
                        "Estadístico t en paréntesis"))
 
+#Tabla de diagnostico modelo VAR=============
+ptm_test_vecm <- serial.test(vecm.level, type = "PT.asymptotic")
+arch_vecm <- arch.test(vecm.level, multivariate.only = T)
+jb_vecm <- normality.test(vecm.level, multivariate.only = T)
+
+tabla_vecm_tests <- tibble(Prueba = c("Portmanteau", "ARCH", "Jarque-Bera"),
+                          `Estadístico` = c(round(ptm_test_vecm$serial$statistic, 2),
+                                            round(arch_vecm$arch.mul$statistic, 2), 
+                                            round(jb_vecm$jb.mul$JB$statistic, 2)),
+                          `Valor p` =  c(round(ptm_test_vecm$serial$p.value, 2), 
+                                         round(arch_vecm$arch.mul$p.value, 2), 
+                                         round(jb_vecm$jb.mul$JB$p.value, 2)))  
+
+knitr::kable(tabla_vecm_tests, booktabs = TRUE, 
+             caption = "Pruebas de diagnóstico del VECM",
+             label = "modelo_vecm_pruebas",
+             format = "latex") %>% 
+  kable_styling(font_size = 11)
 
 
 #Gráfico VECM impulso-respuesta dsf_crec========================
@@ -1051,9 +1164,9 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_irf_dsf_vecm.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 6, height = 3)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-irf1 <- irf(vec2var(vecm),
+irf1 <- irf(vecm.level,
             impulse = "des.sf",
             response = "cpib.cri",
             n.ahead = 36,
@@ -1081,10 +1194,9 @@ vecm_dsf_crec_acum <- tibble(irf = irf2$irf %>% unlist(),
 
 vecm_dsf_crec <- bind_rows(vecm_dsf_crec_simple, vecm_dsf_crec_acum)
 
-g_irf_dsf_vecm <- vecm_dsf_crec %>% 
+g_irf_dsf_vecm <- vecm_dsf_crec_simple %>% 
   ggplot(aes(x = periodo, y = irf)) +
   geom_line(size = 0.65, colour = "darkblue") +
-  facet_wrap(tipo ~ ., scales = "free_y") +
   scale_x_continuous(breaks = seq(0, 36, by = 4)) +
   geom_hline(yintercept = 0) +  
   geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
@@ -1096,8 +1208,8 @@ g_irf_dsf_vecm <- vecm_dsf_crec %>%
   theme(legend.position = "none", 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black") ,
-        axis.title = element_text(size = 6), 
-        axis.text=element_text(size = 6), 
+        axis.title = element_text(size = 7), 
+        axis.text=element_text(size = 7), 
         strip.text.y = element_text(size = 7))
         
 print(g_irf_dsf_vecm)
@@ -1111,9 +1223,9 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_irf_crec_vecm.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
-tikz(tf, standAlone = FALSE, width = 6, height = 3)
+tikz(tf, standAlone = FALSE, width = 4, height = 3)
 
-irf1 <- irf(vec2var(vecm),
+irf1 <- irf(vecm.level,
             impulse = "cpib.cri",
             response = "des.sf",
             n.ahead = 36,
@@ -1141,10 +1253,9 @@ vecm_crec_dsf_acum <- tibble(irf = irf2$irf %>% unlist(),
 
 vecm_crec_dsf <- bind_rows(vecm_crec_dsf_simple, vecm_crec_dsf_acum)
 
-g_irf_crec_vecm <- vecm_crec_dsf %>% 
+g_irf_crec_vecm <- vecm_crec_dsf_simple %>% 
   ggplot(aes(x = periodo, y = irf)) +
   geom_line(size = 0.65, colour = "darkblue") +
-  facet_wrap(tipo ~ ., scales = "free_y") +
   scale_x_continuous(breaks = seq(0, 36, by = 4)) +
   geom_hline(yintercept = 0) +  
   geom_line(aes(x = periodo, y = l_sup), colour = "darkgrey", linetype = "dashed",
@@ -1156,8 +1267,8 @@ g_irf_crec_vecm <- vecm_crec_dsf %>%
   theme(legend.position = "none", 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black") ,
-        axis.title = element_text(size = 6), 
-        axis.text=element_text(size = 6), 
+        axis.title = element_text(size = 7), 
+        axis.text=element_text(size = 7), 
         strip.text.y = element_text(size = 7))
 
 print(g_irf_crec_vecm)
@@ -1166,3 +1277,114 @@ dev.off()
 
 setwd(oldwd)
 
+
+
+#Predicción del VECM==============================
+
+#Q1_2021
+Q1_2021 <- tibble(fecha = "2021-03-01", 
+                  apert_comercial = 0.656241840565414,
+                  cpib.usa = 0.00545680255948788,
+                  inflacion = 0.00472732067903414,
+                  tbp = 3.4,
+                  vartc = 0.0484192246795034,
+                  est.d2 = ifelse(quarter(fecha) == 2, 1,  0),
+                  est.d3 = ifelse(quarter(fecha) == 3, 1, 0),
+                  est.d4 = ifelse(quarter(fecha) == 4, 1, 0),
+                  tendencia = 85) %>%
+  dplyr::select(-fecha) %>% 
+  as.matrix()
+
+predict(vecm.level, dumvar = Q1_2021, 
+        n.ahead = 1)
+
+#Valor Real 1Q2021 cpib.cri
+-0.0217776236416185
+
+dev.off()
+plot(pred3, names = "cpib.cri")
+plot(pred3, names = "des.sf")
+
+fanchart(pred3, names = "cpib.cri")
+fanchart(pred3, names = "des.sf")
+
+
+
+#Escenarios
+fecha_t <- data$fecha[nrow(data)]
+trend_t <- vecm.level$datamat[nrow(vecm.level$datamat), "trend.l7"]
+n_proy <- 12 / 4 * 5
+
+dummies.est <- tibble(cons = 1:n_proy,
+                      fecha =  add_with_rollback(fecha_t, months(cons * 3)),
+                      est.d2 = ifelse(quarter(fecha) == 2, 1, 0),
+                      est.d3 = ifelse(quarter(fecha) == 3, 1, 0),
+                      est.d4 = ifelse(quarter(fecha) == 4, 1, 0))
+
+#Manteniendo constante covariables
+
+esc1 <- tibble(cons = 1:n_proy, 
+               fecha =  add_with_rollback(fecha_t, months(cons * 3)),
+               apert_comercial = data$apert_comercial[nrow(data)],        
+               cpib.usa = data$cpib.usa[nrow(data)],    
+               inflacion = data$inflacion[nrow(data)], 
+               tbp = data$tbp[nrow(data)], 
+               vartc = data$vartc[nrow(data)]) %>%
+  left_join(dummies.est, by = c("cons", "fecha")) %>%
+  dplyr::select(-cons, -fecha) %>% 
+  as.matrix()
+             
+pred1 <- predict(vecm.level, dumvar = esc1,
+                 n.ahead = n_proy)
+
+dev.off()
+plot(pred1, names = "cpib.cri")
+plot(pred1, names = "des.sf")
+
+fanchart(pred1, names = "cpib.cri")
+fanchart(pred1, names = "des.sf")
+
+#Valores promedios para las covariables
+esc2 <- tibble(cons = 1:n_proy, 
+               fecha =  add_with_rollback(fecha_t, months(cons * 3)),
+               apert_comercial = mean(data$apert_comercial),        
+               cpib.usa = mean(data$cpib.usa),    
+               inflacion = mean(data$inflacion), 
+               tbp = mean(data$tbp), 
+               vartc = mean(data$vartc)) %>%
+  left_join(dummies.est, by = c("cons", "fecha")) %>%
+  dplyr::select(-cons, -fecha) %>% 
+  as.matrix()
+
+pred2 <- predict(vecm.level, dumvar = esc2,
+                 n.ahead = n_proy)
+
+dev.off()
+plot(pred2, names = "cpib.cri")
+plot(pred2, names = "des.sf")
+
+fanchart(pred2, names = "cpib.cri")
+fanchart(pred2, names = "des.sf")
+
+#Valores discrecionales de covariables
+esc3 <- tibble(cons = 1:n_proy, 
+               fecha =  add_with_rollback(fecha_t, months(cons * 3)),
+               apert_comercial = data$apert_comercial[nrow(data)],        
+               cpib.usa = 0.00545680255948788,    
+               inflacion = 0.00472732067903414, 
+               tbp = 3.4, 
+               vartc = 0.0484192246795034) %>%
+  left_join(dummies.est, by = c("cons", "fecha")) %>%
+  dplyr::select(-cons, -fecha) %>% 
+  as.matrix()
+
+q1_2021
+pred3 <- predict(vecm.level, dumvar = esc3,
+                 n.ahead = n_proy)
+
+dev.off()
+plot(pred3, names = "cpib.cri")
+plot(pred3, names = "des.sf")
+
+fanchart(pred3, names = "cpib.cri")
+fanchart(pred3, names = "des.sf")

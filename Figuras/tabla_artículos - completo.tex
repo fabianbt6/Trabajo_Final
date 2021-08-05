@@ -1,0 +1,84 @@
+\documentclass[10pt]{article} %Comentar para exportar al doc final
+\usepackage{array} %Comentar para exportar al doc final
+\usepackage{changepage} %Comentar para exportar al doc final
+\usepackage{float} %Comentar para exportar al doc final
+\usepackage[spanish,es-noshorthands]{babel} %Comentar para exportar al doc final
+\usepackage{longtable}%Comentar para exportar al doc final
+\usepackage[backend=biber, style=apa, citestyle=apa]{biblatex} %Comentar para exportar al doc final
+\addbibresource{Trabajo_Final.bib} %Comentar para exportar al doc final
+
+
+\begin{document} %Comentar para exportar al doc final
+	\setlength\LTleft{-3.75cm} %Comentar para exportar al doc final
+	\small %Comentar para exportar al doc final
+			\begin{longtable}{m{2cm} m{2.5cm} m{4cm} m{9 cm}} 
+			\caption{Resumen de los artículos revisados.} \label{tab:resumen} \\	
+				\hline
+				\multicolumn{1}{c}{\textbf{Autores}} & \multicolumn{1}{c}{\textbf{Título}} & 
+				\multicolumn{1}{c}{\textbf{Objetivo}}& \multicolumn{1}{c}{\textbf{Síntesis}} \\ 
+				\hline 
+				\endfirsthead
+
+				\multicolumn{4}{c}%
+				{{\bfseries \tablename\ \thetable{} -- continúa de la página anterior}} \\
+				\multicolumn{1}{c}{\textbf{Autores}} & \multicolumn{1}{c}{\textbf{Título}} & 
+				\multicolumn{1}{c}{\textbf{Objetivo}}& \multicolumn{1}{c}{\textbf{Síntesis}} \\ 
+				\hline 
+				\endhead
+
+				\cite{Levine1997} &
+				Financial Development and Economic Growth: Views and Agenda &
+				\begin{itemize} 
+					\item Organizar un marco analítico sobre el nexo crecimiento-sistema financiero, con teoría existente. 
+					\item Evaluar la importancia del sistema financiero en el crecimiento económico.  
+				\end{itemize} &
+				\begin{itemize} 
+					\item \textbf{Metodología:} Hace una revisión de estudios anteriores y sus conclusiones, no realiza un análisis específico para este artículo. 
+					\item \textbf{Principal conclusión:} A pesar de la gran cantidad de evidencia empírica a favor del vínculo entre crecimiento económico y desarrollo del sistema financiero, existe la necesidad de mayor investigación sobre el desarrollo del sistema financiero.    
+				\end{itemize}\\ 
+				 \hline	
+				\cite{Beck2000} &
+				Finance and the sources of growth & 
+				Examinar la relación del desarrollo de los intermediarios financieros y las fuentes de crecimiento económico: tasas de ahorro, acumulación de capital y productividad total de los factores. & 
+				\begin{itemize} 
+					\item \textbf{Metodología:} Estimadores de panel GMM dinámicos y estimadores de variables instrumentales de corte transversal con una muestra de 63 países y el periodo 1971-1995.
+					\item \textbf{Variables dependientes:} Crecimiento del PIB real per cápita, del capital, de la productividad y tasas privadas de ahorro.
+					\item \textbf{Variable independiente:} Créditos de instituciones financieros al sector privado entre el producto interno bruto (PIB), como indicador de desarrollo de los intermediarios financieros.  
+					\item \textbf{Variables de control:} escolaridad, apertura económica, inflación, tamaño del estado, premio por invertir en el mercado negro.  
+					\item \textbf{Principal conclusión:} Se identifica una asociación estadísticamente significativa y económicamente alta entre desarrollo del sistema financiero y la fuente de crecimiento económica correspondiente a la productividad total de los factores.
+				\end{itemize}\\ 
+				 \hline
+				\cite{Arestis2010} &
+				Financial structure and economic growth: Evidence from time series analyses & 
+				Examinar si la estructura del sistema financiero (basada en bancos vs basada en mercado de valores) es significativa para explicar el crecimiento económico, contemplando la heterogeneidad entre países. & 
+				\begin{itemize} 
+					\item \textbf{Metodología:} Tomando 6 países con distintas estructuras de sistema financiero, primero se realiza un análisis de serie de tiempo para cada país individualmente, utilizando Modelos VAR. Posteriormente, se analizan los 6 países en conjunto con métodos de páneles dinámicos heterogéneos. Se comparan ambos resultados para evaluar si los datos de los 6 países se pueden analizar en conjunto.   
+					\item \textbf{Variables dependientes:} Logaritmo del producto interno bruto per cápita y la estructura del sistema financiero, definida como el ratio entre la razón de capitalización a PIB y la razón de préstamos bancarios a PIB. Valores altos de este ratio indican que la economía está más basada en mercado.
+					\item \textbf{Variables de control:} Formación bruta de capital per cápita.  
+					\item \textbf{Principal conclusión:} De los 6 países analizados, en 5 se constató que la estructura del sistema financiero afecta el crecimiento económico. Asimismo, mediante los VECM, se evidenció una relación de largo plazo entre producción y la estructura del sistema financiero. 
+				\end{itemize}\\ 
+				 \hline
+				\cite{Chortareas2015} &
+				Financial Development and Economic Activity in Advanced and Developing Open Economies: Evidence from Panel Cointegration & 
+				Analizar la relación entre crecimiento económico y sistema financiero, considerando la apertura comercial y apertura financiera. & 
+				\begin{itemize} 
+					\item \textbf{Metodología:} Análisis de cointegración y datos de panel.   
+					\item \textbf{Variable dependiente:} Logaritmo del producto interno bruto per cápita.
+					\item \textbf{Variable independiente:} Créditos bancarios domésticos al sector privado entre PIB, como indicador de desarrollo del sistema financiero. Flujos de activos y pasivos externos entre el PIB, como indicador de apertura financiera. Exportaciones más importaciones entre PIB, como indicador de apertura comercial.  
+					\item \textbf{Principal conclusión:} La relación entre sistema financiero y crecimiento económico gana relevancia cuando se controla por indicadores de apertura económica, siendo más importante la apertura comercial en los países en vías de desarrollo y la apertura financiera en los países desarrollados. Por su parte, se aporta evidencia a favor de que el desarrollo del sistema financiero impulsa la producción en el largo plazo, para los países desarrollados, mientras que la relación causal resultó bidireccional en los países en vías de desarrollo. 
+				\end{itemize}\\ 
+				 \hline
+				\cite{Aghion2004} &
+				Financial development and the instability of open economies & 
+				Analizar el rol de factores financieros como fuente de inestabilidad en economías abiertas y pequeñas. & 
+				\begin{itemize} 
+					\item \textbf{Metodología:} Se formula un modelo teórico básico de un país pequeño y abierto, que comercializa un único bien producido con un factor y capital. Se asume libre mobilización de capital internacional.   
+					\item \textbf{Principal conclusión:} Países con desarrollo intermedio del sistema financiero, son más inestables, debido a que los shocks son más largos y persistentes y muestran ciclos estables limitados.  
+				\end{itemize}\\ 
+				 \hline
+
+			\end{longtable} 
+
+\printbibliography %Comentar para exportar al doc final
+
+\end{document} %Comentar para exportar al doc final
