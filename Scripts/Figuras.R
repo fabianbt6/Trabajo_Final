@@ -473,7 +473,11 @@ cormat <- data %>%
   cor() %>% 
   round(2)
 
+<<<<<<< HEAD
 nombres <- c("Crec. Económico", "Des. S.F.", "Apert. Com.", "Crec. EUA", "Inflación", "TBP", "Var.TC")
+=======
+nombres <- c("Crec. Económico", "Des. S.F.", "Apert. Com.", "Crec. EUA", "Inflación", "TBP", "Var. TC")
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 colnames(cormat) <- nombres
 row.names(cormat) <- nombres
 
@@ -592,13 +596,22 @@ knitr::kable(tab_diff_df, booktabs = TRUE,
 cajo_covars <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
                      type = "eigen",
                      K = 7, 
+<<<<<<< HEAD
                      dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4, tendencia),
+=======
+                     ecdet = "trend", 
+                     dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4),
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
                      spec = "longrun") %>% 
   summary()
 
 cajo_simple <- ca.jo(data %>% dplyr::select(log_pibryoy, cred_pib), 
       type = "eigen",  
       K = 6, 
+<<<<<<< HEAD
+=======
+      ecdet = "const", 
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
       spec = "longrun") %>% 
   summary()
 
@@ -678,7 +691,24 @@ dev.off()
 
 setwd(oldwd)
 
+<<<<<<< HEAD
 #Modelo VAR===================================================
+=======
+
+
+
+
+
+
+
+
+
+#Modelo VAR===================================================
+# mod <- VAR(dplyr::select(data, cpib.cri, des.sf),
+#            type = "both",
+#            lag.max = 12, ic = "AIC",
+#            exogen = dplyr::select(data, cpib.usa, ied.pib, mif, inflacion))
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 
 mod <- VAR(dplyr::select(data, cpib.cri, des.sf),
            type = "both",
@@ -689,11 +719,14 @@ mod <- VAR(dplyr::select(data, cpib.cri, des.sf),
 cor(dplyr::select(data, cpib.cri, des.sf, cpib.usa, inflacion, vartc, tir))
 summary(mod)
 
+<<<<<<< HEAD
 VARselect(dplyr::select(data, cpib.cri, des.sf),
           type = "both",
           lag.max = 12,
           exogen = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4))
 
+=======
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 mod_lm <- lm(cpib.cri ~ des.sf + apert_comercial + cpib.usa + inflacion + tbp + vartc, data = data)  
 
 summary(mod_lm)
@@ -828,7 +861,10 @@ td <- "C:/Users/FBrenes/OneDrive - Habitat for Humanity International/Documents/
 tf <- file.path(td,'g_acf_var.tex')
 oldwd <- setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(td)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 tikz(tf, standAlone = FALSE, width = 4, height = 4)
 
 t_acf_var <- tibble(acf(residuals(mod), plot = F)$acf %>% as_tibble())
@@ -986,6 +1022,10 @@ var_dsf_crec_simple <- tibble(irf = irf1$irf %>% unlist(),
          modelo = "mod1", 
          periodo = 0:(nrow(.) - 1))
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 g_irf_dsf <- var_dsf_crec_simple %>% 
   ggplot(aes(x = periodo, y = irf)) +
   geom_line(size = 0.65, colour = "red") +
@@ -1000,8 +1040,13 @@ g_irf_dsf <- var_dsf_crec_simple %>%
   theme(legend.position = "none", 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+<<<<<<< HEAD
         axis.title = element_text(size = 7), 
         axis.text=element_text(size = 7), 
+=======
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
         strip.text.y = element_text(size = 7))
 
 print(g_irf_dsf)
@@ -1044,8 +1089,13 @@ g_irf_crec <- var_crec_dsf_simple %>%
   theme(legend.position = "none", 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black") ,
+<<<<<<< HEAD
         axis.title = element_text(size = 7), 
         axis.text=element_text(size = 7), 
+=======
+        axis.title = element_text(size = 6), 
+        axis.text=element_text(size = 6), 
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
         strip.text.y = element_text(size = 7))
 
 print(g_irf_crec)
@@ -1055,6 +1105,7 @@ dev.off()
 setwd(oldwd)
 
 
+<<<<<<< HEAD
 
 
 
@@ -1076,6 +1127,18 @@ vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
 round(vecm@lambda, 6)
 summary(vecm)
 dev.off()
+=======
+#Modelo VECM===================================================
+
+vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
+              type = "eigen",
+              K = 7, 
+              ecdet = "trend", 
+              dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4),
+              spec = "longrun") 
+
+summary(vecm)
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 
 vecm.r1 <- cajorls(vecm, r = 1)
 summary(vecm.r1$rlm)
@@ -1087,6 +1150,7 @@ arch.test(vecm.level)
 normality.test(vecm.level)
 
 serial.test(vecm.level)
+<<<<<<< HEAD
 
 #Parámetros de corrección de error=======================
 
@@ -1105,6 +1169,8 @@ knitr::kable(vecm@W, booktabs = TRUE,
 vecm@PI
 
 vecm@W %*% t(vecm@V)
+=======
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 
 #Tabla Coeficientes delo modelo VECM======================
 
@@ -1112,6 +1178,12 @@ str(vec2var(vecm))
 
 vecm.r1$rlm$coefficients
 
+<<<<<<< HEAD
+=======
+summary(vecm.r1$rlm)$'Response cpib.cri.d'$coefficients[, "t value"]
+
+
+>>>>>>> 61d5c9e591dc031cba8d6882d526a6925d47272d
 tab_vecm <- tibble(`Parámetros` = rownames(vecm.r1$rlm$coefficients),
                    cpib.cri = round(vecm.r1$rlm$coefficients[, 1], 3),
                    t1 = round(summary(vecm.r1$rlm)$'Response cpib.cri.d'$coefficients[, "t value"], 2),
