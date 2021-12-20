@@ -1,6 +1,28 @@
 
+#libs======================
 library(shiny)
+library(tidyverse)
+library(readxl)
+library(dygraphs)
+library(xts)
+library(forecast)
+library(ggiraph)
+library(plotly)
+library(lubridate)
+library(urca)
+library(zoo)
+library(car)
+library(kableExtra)
+library(lmtest)
+library(vars)
+library(latex2exp)
+library(tikzDevice)
+library(gtsummary)
+library(multDM)
+library(cowplot)
+library(DT)
 
+#App==================
 shinyUI(fluidPage(
     
     navbarPage(

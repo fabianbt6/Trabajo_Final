@@ -1,5 +1,5 @@
 
-rm(list = ls())
+# rm(list = ls())
 
 #libs======================
 library(shiny)
@@ -25,15 +25,15 @@ library(cowplot)
 library(DT)
 
 #Cargar datos====================
-#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-load(file = "data.RData")
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+load(file = "www/data.RData")
 
-proy_2021 <- read_excel("datos.xlsx",
+proy_2021 <- read_excel("www/datos.xlsx",
                         sheet = "proyeccion",
                         range = "A1:I125",
                         col_types = c("date",rep("numeric", 8)))
 
-historical_data <- read_excel("datos.xlsx",
+historical_data <- read_excel("www/datos.xlsx",
                               sheet = "proyeccion",
                               range = "J1:S121",
                               col_types = c("date", rep("numeric", 9))) %>% 
@@ -51,7 +51,7 @@ var <- VAR(dplyr::select(data, cpib.cri, des.sf),
            ic = "AIC", 
            exogen = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4))
 
-vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
+vecm <- ca.jo(data %>% select(cpib.cri, des.sf),
               type = "eigen",
               K = 5, 
               dumvar = dplyr::select(data, apert_comercial, cpib.usa, inflacion, tbp, vartc, est.d2, est.d3, est.d4, tendencia),

@@ -1,0 +1,197 @@
+---
+title: "Primer ejercicio de simulación"
+author: "Fabián Brenes"
+date: "8/29/2021"
+output: html_document
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+#libs======================
+library(tidyverse)
+library(readxl)
+library(dygraphs)
+library(xts)
+library(forecast)
+library(ggiraph)
+library(plotly)
+library(lubridate)
+library(urca)
+library(zoo)
+library(car)
+library(kableExtra)
+library(lmtest)
+library(vars)
+library(latex2exp)
+library(tikzDevice)
+library(gtsummary)
+library(multDM)
+library(cowplot)
+library(DT)
+
+#Cargar datos=============
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+load(file = "../Datos/data.RData")
+```
+
+Estimación de los modelos VAR y VECM
+
+```{r}
+var <- VAR(dplyr::select(data, cpib.cri, des.sf),
+           type = "both",
+           lag.max = 12, 
+           ic = "AIC", 
+           exogen = dplyr::select(data, apert_comercial, 
+                                  cpib.usa, inflacion, tbp, vartc, 
+                                  est.d2, est.d3, est.d4))
+
+vecm <- ca.jo(data %>% dplyr::select(cpib.cri, des.sf),
+              type = "eigen",
+              K = 5, 
+              dumvar = dplyr::select(data, apert_comercial, cpib.usa, 
+                                     inflacion, tbp, vartc, 
+                                     est.d2, est.d3, est.d4, tendencia),
+              spec = "longrun") 
+vecm.level <- vec2var(vecm, 1)
+```
+
+Esta función genera los datos simulados de las variables exógenas, con base a los percentiles. Los inputs son la data original, **var** corresponde a la variable que se quiere generar datos y **q.inf** es el quantile inferior y **q.sup** el quantil superior. La función genera datos con una distribución uniforme delimitada por los percentiles que se seleccionen.   
+```{r}
+
+generar_datos <- function(data, var, q.inf, q.sup) {
+  
+  var <- enquo(var)
+  mydata <- data %>% dplyr::select(fecha, !!var) %>% 
+    group_by(quarter(fecha)) %>% 
+    summarize(lim.inf = quantile(x = !!var, q.inf),
+              lim.sup = quantile(x = !!var, q.sup), 
+              sim = runif(1, lim.inf, lim.sup))
+  
+  return(mydata$sim)  
+}
+```
+
+Esta función genera las tendencia y las dummies estacionales. **fecha1** y **tendencia1** son la última fecha y tendencia real disponible. Va de 1:4, porque el modelo estima 4 periodos en un mismo momento.
+```{r}
+
+generar_determ <- function(fecha1, tendencia1){
+  
+  tibble(periodo = 1:4,
+         fecha = add_with_rollback(fecha1, months(periodo * 3)),
+         est.d2 = ifelse(quarter(fecha) == 2, 1, 0),
+         est.d3 = ifelse(quarter(fecha) == 3, 1, 0),
+         est.d4 = ifelse(quarter(fecha) == 4, 1, 0),
+         tendencia = tendencia1 + periodo) %>% 
+    select(-c(periodo, fecha))
+}
+
+```
+
+Este código genera los datos simulados. Para este ejemplo se crean 100 iteraciones. Y se estiman cuatro trimestres por iteración, para estimar un año completo. \
+
+Los percentiles escogidos para cada variable corresponden a escenarios extremos. Por ejemplo, para el caso del crecimiento del PIB de USA, se están generando datos que están entre el percentil 1% y 5%. 
+
+```{r}
+ultima_fecha <- data$fecha[nrow(data)]
+ultima_tendencia <- data$tendencia[nrow(data)]
+
+n.iter <- 100
+
+data_sim <- tibble(iter = 1:n.iter) %>% 
+  mutate(apert_comercial = map(iter, ~ generar_datos(data, apert_comercial, 0.40, 0.55)), 
+         cpib.usa = map(iter, ~ generar_datos(data, cpib.usa, 0.01, 0.05)),
+         inflacion = map(iter, ~ generar_datos(data, inflacion, 0.75, 0.85)),
+         tbp = map(iter, ~ generar_datos(data, tbp, 0.85, 0.90)),
+         vartc = map(iter, ~ generar_datos(data, vartc, 0.85, 0.90)),
+         determ = map(iter, ~ generar_determ(ultima_fecha, ultima_tendencia))) %>%
+  unnest(-c(iter)) %>% 
+  nest(data_var = apert_comercial:est.d4, 
+       data_vecm = apert_comercial:tendencia)
+
+```
+
+
+Con la data simulada, para cada una de las iteraciones, se estiman los valores con los dos modelos.
+```{r}
+pred <- data_sim %>%
+  summarize(iter = iter,
+            var_pred = map(data_var, ~ predict(var, dumvar = .,
+                                               n.ahead = 4)$fcst), 
+            vecm_pred = map(data_vecm, ~predict(vecm.level, 
+                                                dumvar = as.matrix(.),
+                                                n.ahead = 4)$fcst)) %>% 
+  unnest(c(var_pred, vecm_pred)) %>% 
+  mutate(y = rep(c("cpib.cri", "des.sf"), n() / 2)) %>%  
+  unnest(c(var_pred, vecm_pred)) %>% 
+  pivot_longer(-c(iter, y), names_sep = "_", names_to = c("mod", "pred")) %>% 
+  select(-pred) 
+
+```
+
+La siguiente rutina extrae las estimaciones para el crecimiento económico. Debido a que el crecimiento económico lo cálculo como $log(pib_{t}) - log(pib_{t - 4})$, estoy trayendo el valor del $pib_{t - 4}$ y luego calculo el $pib_{t + i} = exp(estimado_{t + i} + log(pib_{t + i - 12})$, lo anterior para obtener el monto del pib real en su valor en niveles. Posteriormente sumo el pib real de los cuatro timestres estimados, con el fin de obtener la producción anual y calculo el crecimiento con respecto al valor anterior.
+
+```{r}
+pred_cpib <- pred %>% filter(y == "cpib.cri") %>% 
+  select(-y) %>%
+  mutate(periodo = rep(c(rep(1, 2), rep(2, 2), rep(3, 2), rep(4, 2)), n() / 8), 
+         fecha = add_with_rollback(ultima_fecha, months(periodo * 3)), 
+         fecha.l4 = add_with_rollback(fecha, months(-12))) %>% 
+  left_join(data %>% select(fecha, pibr), by = c("fecha.l4" = "fecha")) %>% 
+  select(-periodo) %>% 
+  mutate(pibr.l4 = round(pibr, 2)) %>% 
+  select(-pibr) %>% 
+  mutate(`estimación puntual` = round(value[, 1], 2), 
+         l.inf = round(value[, 2], 2), 
+         l.sup = round(value[, 3], 2)) %>% 
+  select(-value) %>% 
+  pivot_longer(-c(iter, mod, fecha, fecha.l4, pibr.l4), 
+               names_to = "tipo", values_to = "valor") %>% 
+  mutate(pibr = round(exp(valor + log(pibr.l4)), 2)) %>% 
+  group_by(iter, mod, tipo) %>% 
+  mutate(pibr.anual = round(sum(pibr), 0), 
+         pibr.anual.l1 = round(sum(pibr.l4), 0), 
+         cpibr.anual.estimado = round(log(pibr.anual) - log(pibr.anual.l1), 3)) 
+```
+
+```{r}
+
+datatable(pred_cpib)
+
+```
+
+
+
+```{r}
+
+pred_cpib %>% 
+  ggplot(aes(x = iter, y = cpibr.anual.estimado, colour = tipo)) +
+  geom_line() + 
+  ylab("Crecimiento anual") +
+  ggtitle("Resultado de las Simulaciones") +
+  facet_wrap(. ~ mod) +
+  theme(legend.position = "bottom")
+
+```
+
+```{r}
+
+pred_cpib %>%
+  filter(tipo == "estimación puntual") %>% 
+  group_by(mod) %>% 
+  summarize(mediana = round(median(cpibr.anual.estimado), 4)) %>% 
+  knitr::kable(booktabs = TRUE, 
+               caption = "Mediana de la estimación puntual",
+               format = "html") %>% 
+  kable_styling(latex_options = "scale_down", full_width = F,
+                font_size = 15) %>%   
+  column_spec(1, width = "5em") %>% 
+  column_spec(2, width = "10em")
+```
