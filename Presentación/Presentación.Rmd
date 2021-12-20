@@ -4,6 +4,7 @@ author: "Fabián Brenes Trejos"
 date: "18/1/2021"
 output:
   xaringan::moon_reader:
+    self_contained: true
     css: [xaringan-themer.css, width.css, estilo.css]
     lib_dir: libs
     nature:
